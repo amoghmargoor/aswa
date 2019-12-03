@@ -1,0 +1,18 @@
+#######################################################
+#####  Janani Janmabhoomischa Swargadapi Gariyasi #####
+#######################################################
+[package]
+name = "aswa"
+version = "0.1.0"
+authors = ["amargoor <amargoor@gmail.com>"]
+edition = "2018"
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[build-dependencies] # <-- We added this and everything after!
+lalrpop = "0.17.2"
+
+[dependencies]
+lalrpop-util = "0.17.2"
+regex = "0.2.1"
+itertools = "0.8.2"

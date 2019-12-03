@@ -1,0 +1,324 @@
+use aswa::token::{self, Tok};
+use aswa::ast::*;
+
+#[recursive_ascent]
+grammar<'input>(text: &'input str);
+
+pub Statement: Statement = {
+    Query
+};
+
+Query: Query = {
+    <with: With?> <body: QueryNoWith> => Query {
+        with: with, body: body
+    }
+};
+
+QueryNoWith: QueryBody = {
+    <query_term: QueryTerm> <order_by: OrderBy?> <limit: Limit?> => QueryBody {
+        query_term: query_term, order_by: order_by, limit: limit
+    }
+};
+
+QueryTerm: QueryTerm = {
+    QueryPrimary
+};
+
+QueryPrimary: QueryPrimary = {
+    QuerySpecification
+};
+
+QuerySpecification: QuerySpecification = {
+    "select" <setQuantifier: SetQuantifier?> <selectItems: Items<SelectItem>>
+     "from" <relation: Identifier>
+      "where"? <expression: BooleanExpression> => Select {
+          distinctness: setQuantifier, projection: selectItem, from: relation, filter: expression
+      }
+};
+
+NamedQuery: NamedQuery =
+    <tbl_name: Identifier> <columns: ColumnAliases?> "as" "(" <body: Query> ")" => NamedQuery {
+        tbl_name: tbl_name, columns: columns, body: body
+    };
+
+//Item
+SelectItem: SelectItem =
+    <expression: Expression> <alias: AliasName?> => SelectItem(<>);
+
+SortItem: SortItem =
+    <expression: Expression> <sortOrder: SortOrder?> <nullOrder: NullOrder?> => SortItem {
+        expression: expression, sortOrder: sortOrder, nullOrder: nullOrder
+    };
+
+
+//Expressions
+Expression: Expression = {
+    BooleanExpression
+};
+
+// Following simple Grammar that is being used in Presto is ambiguous and
+// cannot be resolved by Lalrpop currently unlike ANTLR. Hence, converting it into unambiguous one
+// BooleanExpression : Expression = {
+//    ValueExpression,
+//    "not" <booleanExpression: BooleanExpression> => BinaryExpression::not(booleanExpression),
+//    <boolExpr1: BooleanExpression> "or" <boolExpr2: BooleanExpression> => BinaryExpression::or(boolExpr1, boolExpr2),
+//    <boolExpr1: BooleanExpression> "and" <boolExpr2: BooleanExpression> => BinaryExpression::and(boolExpr1, boolExpr2)
+//};
+
+BooleanExpression: Expression = {
+    ValueExpression,
+    NotExpression
+};
+
+NotExpression: Expression = {
+    "not" <notExpr: NotExpression> => BinaryExpression::not(Box::new(notExpr)),
+    AndExpression
+};
+
+AndExpression: Expression = {
+    <andExpr: AndExpression> "and" <orExpr: OrExpression> => BinaryExpression::and(Box::new(andExpr), Box::new(orExpr)),
+    OrExpression
+};
+
+OrExpression: Expression = {
+    <orExpr: OrExpression> "or" <valueExpression: ValueExpression> => BinaryExpression::or(Box::new(orExpr), Box::new(valueExpression))
+}
+
+ValueExpression : Expression = {
+    Identifier
+};
+
+// term
+LiteralValue: Literal = {
+    NumericLiteral => Literal::Numeric(<>.to_owned()),
+    "StringLiteral" => Literal::String(<>.to_owned()),
+    "Blob" => Literal::Blob(<>.to_owned()),
+    "null" => Literal::Null,
+    "current_date" => Literal::CurrentDate,
+    "current_time" => Literal::CurrentTime,
+    "current_timestamp" => Literal::CurrentTimestamp,
+};
+
+// number
+NumericLiteral = {
+    "Integer",
+    "Float",
+};
+
+// Special Tokens
+SetQuantifier = {
+    "distinct",
+    "all"
+};
+
+SortOrder: SortOrder = {
+    "asc" => SortOrder::ASC,
+    "desc" => SortOrder::DESC
+};
+
+NullOrder: NullOrder = {
+    "first" => NullOrder::FIRST,
+    "last" => NullOrder::LAST
+};
+
+//TODO change
+Limit: Limit = {
+    "limit" <Expression> => Limit { expr: <>, offset: None },
+    "limit" <expr: Expression> "offset" <offset: Expression> => Limit { expr: expr, offset: Some(offset) },
+    "limit" <expr: Expression> "," <offset: Expression> => Limit { expr: expr, offset: Some(offset) },
+};
+
+// Utilities
+Items<T>: Vec<T> = {
+    T => vec![<>],
+    <i:Items<T>> "," <e:T> => {
+        let mut i = i;
+        i.push(e);
+        i
+    },
+};
+
+Identifier : Identifier = {
+    "Id" => <>.to_owned(),
+    "StringLiteral" => <>.to_owned()
+};
+
+
+With: With =
+    "with" <recursive: "recursive"?> <namedQueries: Items<NamedQuery>> => With {
+        recursive: recursive.is_some(), body: namedQueries
+    };
+
+OrderBy: Items<SortItem> =
+    "order" "by" <orderItems: Items<SortItem>> => orderItems;
+
+ColumnAliases: Items<Identifiers> =
+    "(" <identifiers: Items<Identifier>> ")" => identifiers;
+
+AliasName: AliasName =
+  "as"? <identifier:Identifier> => AliasName {
+      identifier: identifier
+  };
+
+extern {
+    type Location = usize;
+    type Error = token::Error;
+    enum Tok<'input> {
+        "abort" => Tok::Abort,
+        "action" => Tok::Action,
+        "add" => Tok::Add,
+        "after" => Tok::After,
+        "all" => Tok::All,
+        "alter" => Tok::Alter,
+        "analyze" => Tok::Analyze,
+        "and" => Tok::And,
+        "as" => Tok::As,
+        "asc" => Tok::Asc,
+        "attach" => Tok::Attach,
+        "autoincrement" => Tok::Autoincr,
+        "before" => Tok::Before,
+        "begin" => Tok::Begin,
+        "between" => Tok::Between,
+        "by" => Tok::By,
+        "cascade" => Tok::Cascade,
+        "case" => Tok::Case,
+        "cast" => Tok::Cast,
+        "check" => Tok::Check,
+        "collate" => Tok::Collate,
+        "column" => Tok::ColumnKw,
+        "commit" => Tok::Commit,
+        "conflict" => Tok::Conflict,
+        "constraint" => Tok::Constraint,
+        "create" => Tok::Create,
+        "cross" => Tok::Cross,
+        "current_date" => Tok::CurrentDate,
+        "current_time" => Tok::CurrentTime,
+        "current_timestamp" => Tok::CurrentTimestamp,
+        "database" => Tok::Database,
+        "default" => Tok::Default,
+        "deferrable" => Tok::Deferrable,
+        "deferred" => Tok::Deferred,
+        "delete" => Tok::Delete,
+        "desc" => Tok::Desc,
+        "detach" => Tok::Detach,
+        "distinct" => Tok::Distinct,
+        "drop" => Tok::Drop,
+        "each" => Tok::Each,
+        "else" => Tok::Else,
+        "end" => Tok::End,
+        "escape" => Tok::Escape,
+        "except" => Tok::Except,
+        "exclusive" => Tok::Exclusive,
+        "exists" => Tok::Exists,
+        "explain" => Tok::Explain,
+        "fail" => Tok::Fail,
+        "first" => Tok::First,
+        "for" => Tok::For,
+        "foreign" => Tok::Foreign,
+        "from" => Tok::From,
+        "full" => Tok::Full,
+        "glob" => Tok::Glob,
+        "group" => Tok::Group,
+        "having" => Tok::Having,
+        "if" => Tok::If,
+        "ignore" => Tok::Ignore,
+        "immediate" => Tok::Immediate,
+        "in" => Tok::In,
+        "index" => Tok::Index,
+        "indexed" => Tok::Indexed,
+        "initially" => Tok::Initially,
+        "inner" => Tok::Inner,
+        "insert" => Tok::Insert,
+        "instead" => Tok::Instead,
+        "intersect" => Tok::Intersect,
+        "into" => Tok::Into,
+        "is" => Tok::Is,
+        "isnull" => Tok::IsNull,
+        "join" => Tok::Join,
+        "key" => Tok::Key,
+        "last" => Tok::Last,
+        "left" => Tok::Left,
+        "like" => Tok::Like,
+        "limit" => Tok::Limit,
+        "match" => Tok::Match,
+        "natural" => Tok::Natural,
+        "no" => Tok::No,
+        "not" => Tok::Not,
+        "notnull" => Tok::NotNull,
+        "null" => Tok::Null,
+        "of" => Tok::Of,
+        "offset" => Tok::Offset,
+        "on" => Tok::On,
+        "or" => Tok::Or,
+        "order" => Tok::Order,
+        "outer" => Tok::Outer,
+        "plan" => Tok::Plan,
+        "pragma" => Tok::Pragma,
+        "primary" => Tok::Primary,
+        "query" => Tok::Query,
+        "raise" => Tok::Raise,
+        "recursive" => Tok::Recursive,
+        "references" => Tok::References,
+        "regexp" => Tok::Regexp,
+        "reindex" => Tok::Reindex,
+        "release" => Tok::Release,
+        "rename" => Tok::Rename,
+        "replace" => Tok::Replace,
+        "restrict" => Tok::Restrict,
+        "right" => Tok::Right,
+        "rollback" => Tok::Rollback,
+        "row" => Tok::Row,
+        "savepoint" => Tok::Savepoint,
+        "select" => Tok::Select,
+        "set" => Tok::Set,
+        "table" => Tok::Table,
+        "temp" => Tok::Temp,
+        "then" => Tok::Then,
+        "to" => Tok::To,
+        "transaction" => Tok::Transaction,
+        "trigger" => Tok::Trigger,
+        "union" => Tok::Union,
+        "unique" => Tok::Unique,
+        "update" => Tok::Update,
+        "using" => Tok::Using,
+        "vacuum" => Tok::Vacuum,
+        "values" => Tok::Values,
+        "view" => Tok::View,
+        "virtual" => Tok::Virtual,
+        "when" => Tok::When,
+        "where" => Tok::Where,
+        "with" => Tok::With,
+        "without" => Tok::Without,
+
+        "StringLiteral" => Tok::StringLiteral(<&'input str>),
+        "Id" => Tok::Id(<&'input str>),
+        "Variable" => Tok::Variable(<&'input str>),
+
+        "Blob" => Tok::Blob(<&'input str>),
+        "Integer" => Tok::Integer(<&'input str>),
+        "Float" => Tok::Float(<&'input str>),
+
+        "&" => Tok::BitAnd,
+        "~" => Tok::BitNot,
+        "|" => Tok::BitOr,
+        "," => Tok::Comma,
+        "||" => Tok::Concat,
+        "." => Tok::Dot,
+        "=" => Tok::Equals,
+        ">" => Tok::GreaterThan,
+        "=>" => Tok::GreaterEquals,
+        "(" => Tok::LeftParen,
+        "<<" => Tok::LeftShift,
+        "<=" => Tok::LessEquals,
+        "<" => Tok::LessThan,
+        "-" => Tok::Minus,
+        "<>" => Tok::NotEquals,
+        "+" => Tok::Plus,
+        "%" => Tok::Reminder,
+        ")" => Tok::RightParen,
+        ">>" => Tok::RightShift,
+        ";" => Tok::Semi,
+        "/" => Tok::Slash,
+        "*" => Tok::Star,
+    }
+}
