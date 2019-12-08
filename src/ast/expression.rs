@@ -9,6 +9,15 @@ pub enum Expression {
     BooleanExpr(BooleanExpression),
     Identifier {
         name: String
+    },
+    Literal(Literal)
+}
+
+impl Expression {
+    fn id(id_str: String) -> Box<Expression> {
+        Box::new(Expression::Identifier {
+            name: id_str
+        })
     }
 }
 
@@ -42,6 +51,7 @@ impl NodeTrait for Expression {
         }
     }
 }
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BooleanExpression {
     BinaryExpression {
@@ -56,27 +66,27 @@ pub enum BooleanExpression {
 }
 
 impl BooleanExpression {
-    fn or(lhs: Expression, rhs: Expression) -> Box<Expression> {
-        Box::new(BooleanExpression::BinaryExpression {
+    pub fn or(lhs: Expression, rhs: Expression) -> Expression {
+        BooleanExpression::BinaryExpression {
             lhs: Box::new(lhs),
             operator: BinaryOperator::Or,
             rhs: Box::new(rhs)
-        }.into())
+        }.into()
     }
 
-    fn and(lhs: Expression, rhs: Expression) -> Box<Expression> {
-        Box::new(BooleanExpression::BinaryExpression  {
+    pub fn and(lhs: Expression, rhs: Expression) -> Expression {
+        BooleanExpression::BinaryExpression  {
             lhs: Box::new(lhs),
             operator: BinaryOperator::And,
             rhs: Box::new(rhs)
-        }.into())
+        }.into()
     }
 
-    fn not(operand: Expression) -> Box<Expression> {
-        Box::new(BooleanExpression::UnaryExpression {
+    pub fn not(operand: Expression) -> Expression {
+        BooleanExpression::UnaryExpression {
             operator: UnaryOperator::Not,
             operand: Box::new(operand)
-        }.into())
+        }.into()
     }
 }
 
@@ -172,4 +182,15 @@ impl fmt::Display for UnaryOperator {
         };
         write!(f, "{}", s)
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Literal {
+    Numeric(String),
+    String(String),
+    Blob(String),
+    Null,
+    CurrentTime,
+    CurrentDate,
+    CurrentTimestamp,
 }

@@ -1,10 +1,22 @@
 use aswa::token::{self, Tok};
 use aswa::ast::*;
+use aswa::ast::expression::*;
+use aswa::ast::basic_ast::*;
 
 #[recursive_ascent]
 grammar<'input>(text: &'input str);
 
-pub Statement: Statement = {
+// Utilities
+CommaList<T>: Vec<T> = {
+    T => vec![<>],
+    <i:CommaList<T>> "," <e:T> => {
+        let mut i = i;
+        i.push(e);
+        i
+    },
+};
+
+pub Statement: Query = {
     Query
 };
 
@@ -20,21 +32,25 @@ QueryNoWith: QueryBody = {
     }
 };
 
-QueryTerm: QueryTerm = {
+QueryTerm: Select = {
     QueryPrimary
 };
 
-QueryPrimary: QueryPrimary = {
+QueryPrimary: Select = {
     QuerySpecification
 };
 
-QuerySpecification: QuerySpecification = {
-    "select" <setQuantifier: SetQuantifier?> <selectItems: Items<SelectItem>>
+QuerySpecification: Select = {
+    "select" <setQuantifier: SetQuantifier?> <selectItems: CommaList<SelectItem>>
      "from" <relation: Identifier>
-      "where"? <expression: BooleanExpression> => Select {
-          distinctness: setQuantifier, projection: selectItem, from: relation, filter: expression
+      <where_clause: WhereClause> => Select {
+          distinctness: setQuantifier, projection: selectItems, from: relation, filter: where_clause
       }
 };
+
+WhereClause: Expression = {
+    "where" <expression: BooleanExpression> => expression
+}
 
 NamedQuery: NamedQuery =
     <tbl_name: Identifier> <columns: ColumnAliases?> "as" "(" <body: Query> ")" => NamedQuery {
@@ -43,11 +59,14 @@ NamedQuery: NamedQuery =
 
 //Item
 SelectItem: SelectItem =
-    <expression: Expression> <alias: AliasName?> => SelectItem(<>);
+    <expression: Expression> <alias: AliasName?> => SelectItem {
+        expression: expression,
+        alias: alias
+    };
 
 SortItem: SortItem =
-    <expression: Expression> <sortOrder: SortOrder?> <nullOrder: NullOrder?> => SortItem {
-        expression: expression, sortOrder: sortOrder, nullOrder: nullOrder
+    <expression: Expression> <sort_order: SortOrder?> <null_order: NullOrder?> => SortItem {
+        expression: expression, sort_order: sort_order, null_order: null_order
     };
 
 
@@ -60,9 +79,9 @@ Expression: Expression = {
 // cannot be resolved by Lalrpop currently unlike ANTLR. Hence, converting it into unambiguous one
 // BooleanExpression : Expression = {
 //    ValueExpression,
-//    "not" <booleanExpression: BooleanExpression> => BinaryExpression::not(booleanExpression),
-//    <boolExpr1: BooleanExpression> "or" <boolExpr2: BooleanExpression> => BinaryExpression::or(boolExpr1, boolExpr2),
-//    <boolExpr1: BooleanExpression> "and" <boolExpr2: BooleanExpression> => BinaryExpression::and(boolExpr1, boolExpr2)
+//    "not" <booleanExpression: BooleanExpression> => BooleanExpression::not(booleanExpression),
+//    <boolExpr1: BooleanExpression> "or" <boolExpr2: BooleanExpression> => BooleanExpression::or(boolExpr1, boolExpr2),
+//    <boolExpr1: BooleanExpression> "and" <boolExpr2: BooleanExpression> => BooleanExpression::and(boolExpr1, boolExpr2)
 //};
 
 BooleanExpression: Expression = {
@@ -71,21 +90,24 @@ BooleanExpression: Expression = {
 };
 
 NotExpression: Expression = {
-    "not" <notExpr: NotExpression> => BinaryExpression::not(Box::new(notExpr)),
+    "not" <notExpr: NotExpression> => BooleanExpression::not(notExpr),
     AndExpression
 };
 
 AndExpression: Expression = {
-    <andExpr: AndExpression> "and" <orExpr: OrExpression> => BinaryExpression::and(Box::new(andExpr), Box::new(orExpr)),
+    <andExpr: AndExpression> "and" <orExpr: OrExpression> => BooleanExpression::and(andExpr, orExpr),
     OrExpression
 };
 
 OrExpression: Expression = {
-    <orExpr: OrExpression> "or" <valueExpression: ValueExpression> => BinaryExpression::or(Box::new(orExpr), Box::new(valueExpression))
+    <orExpr: OrExpression> "or" <valueExpression: ValueExpression> => BooleanExpression::or(orExpr, valueExpression)
 }
 
 ValueExpression : Expression = {
-    Identifier
+    Identifier => Expression::Identifier {
+        name: <>
+    },
+    LiteralValue => Expression::Literal(<>)
 };
 
 // term
@@ -106,19 +128,19 @@ NumericLiteral = {
 };
 
 // Special Tokens
-SetQuantifier = {
-    "distinct",
-    "all"
+SetQuantifier: Distinctness = {
+    "distinct" => Distinctness::Distinct,
+    "all" => Distinctness::All
 };
 
 SortOrder: SortOrder = {
-    "asc" => SortOrder::ASC,
-    "desc" => SortOrder::DESC
+    "asc" => SortOrder::Asc,
+    "desc" => SortOrder::Desc
 };
 
 NullOrder: NullOrder = {
-    "first" => NullOrder::FIRST,
-    "last" => NullOrder::LAST
+    "first" => NullOrder::First,
+    "last" => NullOrder::Last
 };
 
 //TODO change
@@ -128,32 +150,27 @@ Limit: Limit = {
     "limit" <expr: Expression> "," <offset: Expression> => Limit { expr: expr, offset: Some(offset) },
 };
 
-// Utilities
-Items<T>: Vec<T> = {
-    T => vec![<>],
-    <i:Items<T>> "," <e:T> => {
-        let mut i = i;
-        i.push(e);
-        i
-    },
-};
-
-Identifier : Identifier = {
-    "Id" => <>.to_owned(),
-    "StringLiteral" => <>.to_owned()
+Identifier : String = {
+    "Id" => <>.to_owned()
 };
 
 
 With: With =
-    "with" <recursive: "recursive"?> <namedQueries: Items<NamedQuery>> => With {
+    "with" <recursive: "recursive"?> <namedQueries: CommaList<NamedQuery>> => With {
         recursive: recursive.is_some(), body: namedQueries
     };
 
-OrderBy: Items<SortItem> =
-    "order" "by" <orderItems: Items<SortItem>> => orderItems;
+OrderBy: Vec<SortItem> =
+    "order" "by" <orderItems: CommaList<SortItem>> => orderItems;
 
-ColumnAliases: Items<Identifiers> =
-    "(" <identifiers: Items<Identifier>> ")" => identifiers;
+ColumnAliases: Vec<ColumnName> =
+    "(" <identifiers: CommaList<ColumnName>> ")" => identifiers;
+
+ColumnName: ColumnName = {
+    <identifier: Identifier> => ColumnName {
+        identifier: identifier
+    }
+}
 
 AliasName: AliasName =
   "as"? <identifier:Identifier> => AliasName {
