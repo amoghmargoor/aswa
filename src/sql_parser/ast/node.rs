@@ -1,7 +1,6 @@
 use std::fmt::{Display, Debug};
-use std::any::Any;
-use crate::ast::basic_ast::{Select, SelectItem, AliasName};
-use crate::ast::expression::Expression;
+use crate::sql_parser::ast::basic_ast::{Select, SelectItem, AliasName};
+use crate::sql_parser::ast::expression::Expression;
 
 pub trait NodeTrait: Display + Debug {
     /*fn accept<R, C>(&self, visitor: AstVisitor<R, C>, context: C) -> R

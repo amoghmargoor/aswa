@@ -1,7 +1,7 @@
-use aswa::token::{self, Tok};
-use aswa::ast::*;
-use aswa::ast::expression::*;
-use aswa::ast::basic_ast::*;
+use crate::sql_parser::token::{self, Tok};
+use crate::sql_parser::ast::expression::*;
+use crate::sql_parser::ast::basic_ast::*;
+use crate::sql_parser::token::*;
 
 #[recursive_ascent]
 grammar<'input>(text: &'input str);
@@ -32,8 +32,14 @@ QueryNoWith: QueryBody = {
     }
 };
 
-QueryTerm: Select = {
-    QueryPrimary
+QueryTerm: QueryTerm = {
+    QueryPrimary => QueryTerm {select: <>, other: None},
+    <query_term: QueryTerm> <setOperator: SetOperator> <setQuantifier: SetQuantifier?>
+     <query_primary: QueryPrimary> => QueryTerm { select: query_primary, other: Some(SetQueryTerm {
+         operator: setOperator,
+         query: Box::new(query_term)
+     })
+     }
 };
 
 QueryPrimary: Select = {
@@ -41,10 +47,10 @@ QueryPrimary: Select = {
 };
 
 QuerySpecification: Select = {
-    "select" <setQuantifier: SetQuantifier?> <selectItems: CommaList<SelectItem>>
+    "select" <set_quantifier: SetQuantifier?> <select_items: CommaList<SelectItem>>
      "from" <relation: Identifier>
-      <where_clause: WhereClause> => Select {
-          distinctness: setQuantifier, projection: selectItems, from: relation, filter: where_clause
+      <where_clause: WhereClause?> => Select {
+          distinctness: set_quantifier, projection: select_items, from: relation, filter: where_clause
       }
 };
 
@@ -90,17 +96,17 @@ BooleanExpression: Expression = {
 };
 
 NotExpression: Expression = {
-    "not" <notExpr: NotExpression> => BooleanExpression::not(notExpr),
+    "not" <not_expr: NotExpression> => BooleanExpression::not(not_expr),
     AndExpression
 };
 
 AndExpression: Expression = {
-    <andExpr: AndExpression> "and" <orExpr: OrExpression> => BooleanExpression::and(andExpr, orExpr),
+    <and_expr: AndExpression> "and" <or_expr: OrExpression> => BooleanExpression::and(and_expr, or_expr),
     OrExpression
 };
 
 OrExpression: Expression = {
-    <orExpr: OrExpression> "or" <valueExpression: ValueExpression> => BooleanExpression::or(orExpr, valueExpression)
+    <or_expr: OrExpression> "or" <value_expression: ValueExpression> => BooleanExpression::or(or_expr, value_expression)
 }
 
 ValueExpression : Expression = {
@@ -126,6 +132,12 @@ NumericLiteral = {
     "Integer",
     "Float",
 };
+
+SetOperator: SetOperator = {
+    "union" => SetOperator::Union,
+    "intersect" => SetOperator::Intersect,
+    "except" => SetOperator::Except
+}
 
 // Special Tokens
 SetQuantifier: Distinctness = {
@@ -156,12 +168,12 @@ Identifier : String = {
 
 
 With: With =
-    "with" <recursive: "recursive"?> <namedQueries: CommaList<NamedQuery>> => With {
-        recursive: recursive.is_some(), body: namedQueries
+    "with" <recursive: "recursive"?> <named_queries: CommaList<NamedQuery>> => With {
+        recursive: recursive.is_some(), body: named_queries
     };
 
 OrderBy: Vec<SortItem> =
-    "order" "by" <orderItems: CommaList<SortItem>> => orderItems;
+    "order" "by" <order_items: CommaList<SortItem>> => order_items;
 
 ColumnAliases: Vec<ColumnName> =
     "(" <identifiers: CommaList<ColumnName>> ")" => identifiers;

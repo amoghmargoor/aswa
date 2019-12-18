@@ -1,8 +1,6 @@
 use std::fmt;
-use std::borrow::Borrow;
-use std::fmt::{Debug, Display};
-use std::ptr::eq;
-use crate::ast::node::{Node, NodeTrait};
+use std::fmt::Debug;
+use crate::sql_parser::ast::node::{Node, NodeTrait};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Expression {
@@ -11,14 +9,6 @@ pub enum Expression {
         name: String
     },
     Literal(Literal)
-}
-
-impl Expression {
-    fn id(id_str: String) -> Box<Expression> {
-        Box::new(Expression::Identifier {
-            name: id_str
-        })
-    }
 }
 
 impl From<BooleanExpression> for Expression {
@@ -43,7 +33,7 @@ impl NodeTrait for Expression {
 
     fn get_children(&self) -> Vec<Node> {
         match self {
-            Expression::BooleanExpr(b) => vec!(),
+            Expression::BooleanExpr(_) => vec!(),
             Expression::Identifier {
                 name
             } => vec!(),

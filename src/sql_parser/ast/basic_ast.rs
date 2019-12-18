@@ -1,8 +1,7 @@
 use std::fmt;
-use crate::ast::node::{NodeTrait, Node};
-use crate::ast::expression::{Expression, BooleanExpression};
-use std::any::Any;
-use itertools::{Itertools, join};
+use crate::sql_parser::ast::node::{NodeTrait, Node};
+use crate::sql_parser::ast::expression::Expression;
+use itertools::join;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Query {
@@ -12,7 +11,7 @@ pub struct Query {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct QueryBody {
-    pub query_term: Select,
+    pub query_term: QueryTerm,
     pub order_by: Option<Vec<SortItem>>,
     pub limit: Option<Limit>
 }
@@ -54,7 +53,7 @@ pub struct Select {
     pub distinctness: Option<Distinctness>,
     pub projection: Vec<SelectItem>,
     pub from: String,
-    pub filter: Expression,
+    pub filter: Option<Expression>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -70,9 +69,15 @@ impl fmt::Display for Select {
             Some(d) => format!("{}", d),
             _ => String::from("")
         };
-        write!(f, "select {} {} \n from {} \n where {}",
-               distinctness, join(&self.projection, ","),
-               self.from, self.filter)
+        let res = match &self.filter {
+            Some(filter) => write!(f, "select {} {} \n from {} where {}",
+                                   distinctness, join(&self.projection, ","),
+                                   self.from, filter),
+            _ => write!(f, "select {} {} \n from {}",
+                        distinctness, join(&self.projection, ","),
+                        self.from)
+        };
+        return res
     }
 }
 
@@ -87,6 +92,25 @@ impl NodeTrait for Select {
         // FixME
         return vec!()
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct QueryTerm {
+    pub select: Select,
+    pub other: Option<SetQueryTerm>
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SetQueryTerm {
+    pub operator: SetOperator,
+    pub query: Box<QueryTerm>
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum SetOperator {
+    Union,
+    Intersect,
+    Except
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
