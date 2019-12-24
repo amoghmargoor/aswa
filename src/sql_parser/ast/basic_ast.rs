@@ -4,6 +4,87 @@ use crate::sql_parser::ast::expression::Expression;
 use itertools::join;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Statement {
+    Query {
+        with: Option<With>,
+        body: QueryBody
+    },
+    Use {
+        schema: QualifiedName,
+    },
+    CreateSchema {
+        schema: QualifiedName,
+        if_not_exists: bool
+    },
+    AlterSchema {
+        from: QualifiedName,
+        to: String
+    },
+    DropSchema {
+        schema: QualifiedName,
+        if_exists: bool,
+        prop: Option<DropProp>
+    },
+    CreateTableAsSelect {
+        table_name: QualifiedName,
+        if_not_exists: bool,
+        columns: Option<Vec<ColumnName>>,
+        query: Box<Statement>
+    },
+    CreateTable {
+        table_name: QualifiedName,
+        if_not_exists: bool,
+        table_elements: Vec<TableElement>
+    },
+    DropTable {
+        table_name: QualifiedName,
+        if_exists: bool
+    },
+    InsertInto {
+        table_name: QualifiedName,
+        columns: Option<Vec<ColumnName>>,
+        query: Box<Statement>
+    },
+    Delete {
+        from: QualifiedName,
+        filter: Option<Expression>
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TableElement {
+    ColumnDefinition(String, Box<Type>)
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Type {
+    Array(Box<Type>),
+    Map(Box<Type>, Box<Type>),
+    Row(Vec<TableElement>),
+    TIME_WITH_TIME_ZONE(Option<Vec<TypeParameter>>),
+    TIMESTAMP_WITH_TIME_ZONE(Option<Vec<TypeParameter>>),
+    DOUBLE_PRECISION(Option<Vec<TypeParameter>>),
+    User_Defined(String, Option<Vec<TypeParameter>>)
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TypeParameter {
+    IntegerTypeParam(String),
+    TypeParam(Type)
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum DropProp {
+    CASCADE,
+    RESTRICT
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct QualifiedName {
+    pub name: Vec<String>
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Query {
     pub with: Option<With>,
     pub body: QueryBody
@@ -45,7 +126,7 @@ pub struct With {
 pub struct NamedQuery {
     pub tbl_name: String,
     pub columns: Option<Vec<ColumnName>>,
-    pub body: Query
+    pub body: Box<Statement>
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

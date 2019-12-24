@@ -21,5 +21,8 @@ fn test_select() {
 
 #[test]
 fn test_set_operator_query() {
-    parse("SELECT a from foo intersect select b from dfg").unwrap();
+    parse("SELECT a from abc intersect select b from def").unwrap();
+    parse("SELECT a from abc intersect select b from def intersect select c from ghi").unwrap();
+    parse("SELECT a from abc union select b from def").unwrap();
+    parse("SELECT a from abc except select b from def").unwrap();
 }

@@ -10,18 +10,128 @@ grammar<'input>(text: &'input str);
 CommaList<T>: Vec<T> = {
     T => vec![<>],
     <i:CommaList<T>> "," <e:T> => {
-        let mut i = i;
-        i.push(e);
-        i
+        let mut v = i;
+        v.push(e);
+        v
     },
 };
 
-pub Statement: Query = {
-    Query
+IdentifierList<T>: Vec<T> = {
+    T => vec![<>],
+    <i: IdentifierList<T>> "." <e:T> => {
+        let mut v = i;
+        v.push(e);
+        v
+    }
 };
 
-Query: Query = {
-    <with: With?> <body: QueryNoWith> => Query {
+pub Statement: Statement = {
+    Query,
+    Use
+};
+
+Use: Statement = {
+    "use" <qualified_name: QualifiedName> => Statement::Use {
+        schema: qualified_name
+    }
+};
+
+CreateSchema: Statement = {
+    "create" "schema" <if_not_exists: ("if" "not" "exists")?> <qualified_name: QualifiedName> => Statement::CreateSchema {
+        schema: qualified_name,
+        if_not_exists: if_not_exists.is_some()
+    }
+};
+
+DropSchema: Statement = {
+    "drop" "schema" <if_exists: ("if" "exists")?> <qualified_name: QualifiedName> <drop_prop: DropProp?> => Statement::DropSchema {
+        schema: qualified_name,
+        if_exists: if_exists.is_some(),
+        prop: drop_prop
+    }
+};
+
+DropProp: DropProp = {
+    "cascade" => DropProp::CASCADE,
+    "restrict" => DropProp::RESTRICT
+};
+
+AlterSchema: Statement = {
+    "alter" "schema" <qualified_name: QualifiedName> "rename" "to" <identifier: Identifier> => Statement::AlterSchema {
+        from: qualified_name,
+        to: identifier
+    }
+};
+
+CreateTableAsSelect: Statement = {
+    "create" "table" <if_not_exists: ("if" "not" "exists")?> <table_name: QualifiedName>
+     <column_aliases: ColumnAliases?> "as" "(" <query: Query> ")" => Statement::CreateTableAsSelect {
+         table_name: table_name,
+         if_not_exists: if_not_exists.is_some(),
+         columns: column_aliases,
+         query: Box::new(query)
+     },
+         "create" "table" <if_not_exists: ("if" "not" "exists")?> <table_name: QualifiedName>
+          <column_aliases: ColumnAliases?> "as" <query: Query> => Statement::CreateTableAsSelect {
+              table_name: table_name,
+              if_not_exists: if_not_exists.is_some(),
+              columns: column_aliases,
+              query: Box::new(query)
+          }
+};
+
+CreateTable: Statement = {
+    "create" "table" <if_not_exists: ("if" "not" "exists")?> <table_name: QualifiedName> "(" <table_elements: CommaList<TableElement>> ")" => Statement::CreateTable {
+        table_name: table_name,
+        if_not_exists: if_not_exists.is_some(),
+        table_elements: table_elements
+    }
+};
+
+DropTable: Statement = {
+    "drop" "table" <if_exists: ("if" "exists")?> <table_name: QualifiedName> => Statement::DropTable {
+        table_name: table_name,
+        if_exists: if_exists.is_some()
+    }
+};
+
+InsertInto: Statement = {
+    "insert" "into" <table_name: QualifiedName> <column_aliases: ColumnAliases?> <query: Query> => Statement::InsertInto {
+        table_name: table_name,
+        columns: column_aliases,
+        query: Box::new(query)
+    }
+};
+
+Delete: Statement = {
+    <table_name: QualifiedName> <expression: WhereClause?> => Statement::Delete {
+        from: table_name,
+        filter: expression
+    }
+};
+
+TableElement: TableElement = {
+    <column_name: Identifier> <col_type: Type> => TableElement::ColumnDefinition(column_name, Box::new(col_type))
+};
+
+Type: Type = {
+    "array" "<" <t: Type> ">" => Type::Array(Box::new(t)),
+    "map" "<" <key_type: Type> "," <value_type: Type> ">" => Type::Map(Box::new(key_type), Box::new(value_type)),
+    "row" "(" <c: CommaList<TableElement>> ")" => Type::Row(<>),
+    "time" "with" "time" "zone" "(" <type_params: CommaList<TypeParameter>?> ")" => Type::TIME_WITH_TIME_ZONE(type_params),
+    "timestamp" "with" "time" "zone" "(" <type_params: CommaList<TypeParameter>?> ")" => Type::TIMESTAMP_WITH_TIME_ZONE(type_params),
+    "double" "precision" "(" <type_params: CommaList<TypeParameter>?> ")" => Type::DOUBLE_PRECISION(type_params),
+    <identifier: Identifier> => Type::User_Defined(identifier, None),
+    <identifier: Identifier> "(" <type_params: CommaList<TypeParameter>?> ")" => Type::User_Defined(identifier, type_params)
+};
+
+TypeParameter: TypeParameter = {
+    "Integer" => TypeParameter::IntegerTypeParam(<>.to_string()),
+    <Type> => TypeParameter::TypeParam(<>)
+};
+
+Query: Statement = {
+    <with: With?> <body: QueryNoWith> => Statement::Query {
         with: with, body: body
     }
 };
@@ -60,7 +170,7 @@ WhereClause: Expression = {
 
 NamedQuery: NamedQuery =
     <tbl_name: Identifier> <columns: ColumnAliases?> "as" "(" <body: Query> ")" => NamedQuery {
-        tbl_name: tbl_name, columns: columns, body: body
+        tbl_name: tbl_name, columns: columns, body: Box::new(body)
     };
 
 //Item
@@ -107,7 +217,7 @@ AndExpression: Expression = {
 
 OrExpression: Expression = {
     <or_expr: OrExpression> "or" <value_expression: ValueExpression> => BooleanExpression::or(or_expr, value_expression)
-}
+};
 
 ValueExpression : Expression = {
     Identifier => Expression::Identifier {
@@ -137,7 +247,7 @@ SetOperator: SetOperator = {
     "union" => SetOperator::Union,
     "intersect" => SetOperator::Intersect,
     "except" => SetOperator::Except
-}
+};
 
 // Special Tokens
 SetQuantifier: Distinctness = {
@@ -182,12 +292,18 @@ ColumnName: ColumnName = {
     <identifier: Identifier> => ColumnName {
         identifier: identifier
     }
-}
+};
 
 AliasName: AliasName =
   "as"? <identifier:Identifier> => AliasName {
       identifier: identifier
   };
+
+QualifiedName: QualifiedName = {
+    <list: IdentifierList<Identifier>> => QualifiedName {
+        name: list
+    }
+};
 
 extern {
     type Location = usize;
@@ -201,6 +317,7 @@ extern {
         "alter" => Tok::Alter,
         "analyze" => Tok::Analyze,
         "and" => Tok::And,
+        "array" => Tok::Array,
         "as" => Tok::As,
         "asc" => Tok::Asc,
         "attach" => Tok::Attach,
@@ -231,6 +348,7 @@ extern {
         "desc" => Tok::Desc,
         "detach" => Tok::Detach,
         "distinct" => Tok::Distinct,
+        "double" => Tok::Double,
         "drop" => Tok::Drop,
         "each" => Tok::Each,
         "else" => Tok::Else,
@@ -270,6 +388,7 @@ extern {
         "like" => Tok::Like,
         "limit" => Tok::Limit,
         "match" => Tok::Match,
+        "map" => Tok::Map,
         "natural" => Tok::Natural,
         "no" => Tok::No,
         "not" => Tok::Not,
@@ -283,6 +402,7 @@ extern {
         "outer" => Tok::Outer,
         "plan" => Tok::Plan,
         "pragma" => Tok::Pragma,
+        "precision" => Tok::Precision,
         "primary" => Tok::Primary,
         "query" => Tok::Query,
         "raise" => Tok::Raise,
@@ -298,17 +418,21 @@ extern {
         "rollback" => Tok::Rollback,
         "row" => Tok::Row,
         "savepoint" => Tok::Savepoint,
+        "schema" => Tok::Schema,
         "select" => Tok::Select,
         "set" => Tok::Set,
         "table" => Tok::Table,
         "temp" => Tok::Temp,
         "then" => Tok::Then,
+        "time" => Tok::Time,
+        "timestamp" => Tok::Timestamp,
         "to" => Tok::To,
         "transaction" => Tok::Transaction,
         "trigger" => Tok::Trigger,
         "union" => Tok::Union,
         "unique" => Tok::Unique,
         "update" => Tok::Update,
+        "use" => Tok::Use,
         "using" => Tok::Using,
         "vacuum" => Tok::Vacuum,
         "values" => Tok::Values,
@@ -318,6 +442,7 @@ extern {
         "where" => Tok::Where,
         "with" => Tok::With,
         "without" => Tok::Without,
+        "zone" => Tok::Zone,
 
         "StringLiteral" => Tok::StringLiteral(<&'input str>),
         "Id" => Tok::Id(<&'input str>),
