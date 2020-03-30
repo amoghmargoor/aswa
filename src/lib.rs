@@ -4,3 +4,4 @@
 extern crate lalrpop_util;
 
 pub mod sql_parser;
+pub mod plan;
