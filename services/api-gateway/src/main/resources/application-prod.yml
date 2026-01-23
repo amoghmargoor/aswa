@@ -1,0 +1,19 @@
+spring:
+  r2dbc:
+    host: ${DB_HOST}
+    port: ${DB_PORT}
+    database: ${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:3600}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800}
+
+logging:
+  level:
+    root: WARN
+    com.aswa.gateway: INFO
+    org.springframework.security: WARN
+    org.springframework.r2dbc: WARN

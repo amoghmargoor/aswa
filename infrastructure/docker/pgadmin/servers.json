@@ -1,0 +1,15 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "ASWA Local",
+      "Group": "Development",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "aswa",
+      "Username": "aswa",
+      "Password": "aswa_dev_password",
+      "SSLMode": "prefer",
+      "Comment": "ASWA local development database"
+    }
+  }
+}

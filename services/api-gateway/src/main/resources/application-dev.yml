@@ -1,0 +1,20 @@
+spring:
+  r2dbc:
+    host: localhost
+    port: 5432
+    database: aswa_dev
+    username: aswa
+    password: aswa_dev_password
+
+jwt:
+  secret: dev-secret-key-must-be-at-least-32-characters-long-for-hs256
+  expiration: 3600
+  refresh-expiration: 604800
+
+logging:
+  level:
+    root: DEBUG
+    com.aswa.gateway: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.r2dbc: DEBUG
+    org.springframework.web: DEBUG

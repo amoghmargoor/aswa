@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: aswa-gateway
+
+  r2dbc:
+    host: ${DB_HOST:localhost}
+    port: ${DB_PORT:5432}
+    database: ${DB_NAME:aswa}
+    username: ${DB_USER:aswa}
+    password: ${DB_PASSWORD:aswa_dev_password}
+    pool:
+      initial-size: 5
+      max-size: 20
+      max-acquire-time: 3000
+      max-idle-time: 30000
+
+jwt:
+  secret: ${JWT_SECRET:dev-secret-key-must-be-at-least-32-characters-long-for-hs256}
+  expiration: ${JWT_EXPIRATION:3600}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+  metrics:
+    tags:
+      application: aswa-gateway
+      environment: ${ENVIRONMENT:development}
+
+logging:
+  level:
+    root: INFO
+    com.aswa.gateway: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.r2dbc: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  show-actuator: true

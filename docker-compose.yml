@@ -1,0 +1,214 @@
+# ASWA Development Environment
+# Docker Compose configuration for local development
+#
+# Services:
+#   - postgres: PostgreSQL 16 database
+#   - redis: Redis cache and message broker
+#   - api-gateway: Java Spring Boot API Gateway
+#   - pgadmin: Database management UI (optional)
+#   - redis-commander: Redis management UI (optional)
+#
+# Usage:
+#   Start:  docker-compose up -d
+#   Stop:   docker-compose down
+#   Logs:   docker-compose logs -f [service]
+#   Clean:  docker-compose down -v  (WARNING: deletes all data)
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: aswa-postgres
+    environment:
+      POSTGRES_USER: aswa
+      POSTGRES_PASSWORD: aswa_dev_password
+      POSTGRES_DB: aswa
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aswa -d aswa"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - aswa-network
+    restart: unless-stopped
+
+  # Redis Cache and Message Broker
+  redis:
+    image: redis:7-alpine
+    container_name: aswa-redis
+    command: redis-server --appendonly yes --requirepass aswa_dev_password
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - aswa-network
+    restart: unless-stopped
+
+  # API Gateway (Java Spring Boot)
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/api-gateway/Dockerfile
+    container_name: aswa-api-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: ${ENVIRONMENT:-dev}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-aswa}
+      DB_USER: ${DB_USER:-aswa}
+      DB_PASSWORD: ${DB_PASSWORD:-aswa_dev_password}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-aswa_dev_password}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-must-be-at-least-32-characters-long-for-hs256}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-3600}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800}
+    ports:
+      - "${API_GATEWAY_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - aswa-network
+    volumes:
+      - ./logs/api-gateway:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    profiles:
+      - services  # Start with: docker-compose --profile services up
+
+  # PgAdmin (Optional - for database management UI)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: aswa-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@aswa.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - aswa-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    profiles:
+      - tools  # Only start with: docker-compose --profile tools up
+
+  # Redis Commander (Optional - for Redis management UI)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: aswa-redis-commander
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:aswa_dev_password
+    ports:
+      - "8081:8081"
+    networks:
+      - aswa-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+    profiles:
+      - tools  # Only start with: docker-compose --profile tools up
+
+networks:
+  aswa-network:
+    name: aswa-network
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: aswa-postgres-data
+    driver: local
+  redis_data:
+    name: aswa-redis-data
+    driver: local
+  pgadmin_data:
+    name: aswa-pgadmin-data
+    driver: local
+
+# ============================================================================
+# Quick Reference
+# ============================================================================
+#
+# Start core services (PostgreSQL, Redis):
+#   docker-compose up -d
+#
+# Start with API Gateway:
+#   docker-compose --profile services up -d
+#
+# Start with management tools (PgAdmin, Redis Commander):
+#   docker-compose --profile tools up -d
+#
+# Start everything (core + services + tools):
+#   docker-compose --profile services --profile tools up -d
+#
+# View logs:
+#   docker-compose logs -f postgres
+#   docker-compose logs -f redis
+#   docker-compose logs -f api-gateway
+#
+# Connect to PostgreSQL:
+#   psql -h localhost -U aswa -d aswa
+#   Password: aswa_dev_password
+#
+# Connect to Redis:
+#   redis-cli -h localhost -p 6379 -a aswa_dev_password
+#
+# Access API Gateway:
+#   http://localhost:8080
+#   Health: http://localhost:8080/health
+#   Swagger UI: http://localhost:8080/swagger-ui.html
+#   API Docs: http://localhost:8080/v3/api-docs
+#
+# Access PgAdmin:
+#   http://localhost:5050
+#   Email: admin@aswa.local
+#   Password: admin
+#
+# Access Redis Commander:
+#   http://localhost:8081
+#
+# Run database migrations:
+#   ./scripts/db-migrate.sh migrate dev
+#
+# Build API Gateway Docker image:
+#   docker-compose build api-gateway
+#
+# Rebuild and restart API Gateway:
+#   docker-compose up -d --build api-gateway
+#
+# Stop all services:
+#   docker-compose down
+#
+# Stop and remove all data (WARNING):
+#   docker-compose down -v
+#
+# ============================================================================

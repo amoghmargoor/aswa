@@ -1,0 +1,83 @@
+[tool.poetry]
+name = "aswa-common"
+version = "0.1.0"
+description = "ASWA Common Python Library - Shared utilities and models"
+authors = ["ASWA Team"]
+readme = "README.md"
+packages = [{include = "aswa_common", from = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+pydantic = ">=2.6"
+pydantic-settings = ">=2.1"
+structlog = ">=24.1"
+tenacity = ">=8.2"
+redis = ">=5.0"
+httpx = ">=0.26"
+prometheus-client = ">=0.19"
+sqlalchemy = {extras = ["asyncio"], version = ">=2.0.25"}
+asyncpg = ">=0.29"
+greenlet = ">=3.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.0"
+pytest-asyncio = ">=0.23"
+pytest-cov = ">=4.1"
+respx = ">=0.20"
+fakeredis = ">=2.21"
+black = ">=24.0"
+ruff = ">=0.2"
+mypy = ">=1.8"
+testcontainers = {extras = ["postgres"], version = ">=3.7"}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# Pytest configuration
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=aswa_common",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+]
+
+# Black configuration
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+# Ruff configuration
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "TCH", "TID", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/**/*.py" = ["S101"]
+
+# Mypy configuration
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+disallow_untyped_defs = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false

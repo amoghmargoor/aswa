@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Determine environment from ASWA_ENV variable, default to dev -->
+    <property name="ASWA_ENV" value="${ASWA_ENV:-dev}"/>
+
+    <!-- Console appender for development -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [requestId=%X{requestId}] [tenantId=%X{tenantId}] [userId=%X{userId}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- JSON appender for production -->
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>requestId</includeMdcKeyName>
+            <includeMdcKeyName>tenantId</includeMdcKeyName>
+            <includeMdcKeyName>userId</includeMdcKeyName>
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <customFields>{"application":"aswa","environment":"${ASWA_ENV}"}</customFields>
+            <shortenedLoggerNameLength>36</shortenedLoggerNameLength>
+            <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                <maxDepthPerThrowable>30</maxDepthPerThrowable>
+                <maxLength>2048</maxLength>
+                <shortenedClassNameLength>20</shortenedClassNameLength>
+                <exclude>sun\.reflect\..*</exclude>
+                <exclude>net\.sf\.cglib\..*</exclude>
+                <rootCauseFirst>true</rootCauseFirst>
+            </throwableConverter>
+        </encoder>
+    </appender>
+
+    <!-- Async appender wrapper for better performance -->
+    <appender name="ASYNC_JSON" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="JSON"/>
+    </appender>
+
+    <!-- Root logger configuration -->
+    <root level="${LOG_LEVEL:-INFO}">
+        <!-- Use CONSOLE for dev, JSON for prod/test -->
+        <if condition='property("ASWA_ENV").equals("prod") || property("ASWA_ENV").equals("test")'>
+            <then>
+                <appender-ref ref="ASYNC_JSON"/>
+            </then>
+            <else>
+                <appender-ref ref="CONSOLE"/>
+            </else>
+        </if>
+    </root>
+
+    <!-- ASWA application loggers -->
+    <logger name="com.aswa" level="DEBUG" additivity="false">
+        <if condition='property("ASWA_ENV").equals("prod") || property("ASWA_ENV").equals("test")'>
+            <then>
+                <appender-ref ref="ASYNC_JSON"/>
+            </then>
+            <else>
+                <appender-ref ref="CONSOLE"/>
+            </else>
+        </if>
+    </logger>
+
+    <!-- Third-party library loggers -->
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="io.netty" level="INFO"/>
+    <logger name="reactor" level="INFO"/>
+    <logger name="org.hibernate" level="INFO"/>
+    <logger name="com.zaxxer.hikari" level="INFO"/>
+    <logger name="io.r2dbc" level="DEBUG"/>
+
+    <!-- Reduce noise from Spring Boot -->
+    <logger name="org.springframework.boot.autoconfigure" level="INFO"/>
+    <logger name="org.springframework.boot.actuate" level="INFO"/>
+
+    <!-- HTTP client logging -->
+    <logger name="org.apache.http" level="INFO"/>
+    <logger name="org.apache.http.wire" level="WARN"/>
+</configuration>
