@@ -1,0 +1,6 @@
+specVersion: "1.0.0"
+dynamicConfigValue:
+  - constraints: {}
+    value:
+      "frontend.forceSearchAttributesCacheRefreshOnRead": true
+      "system.forceSearchAttributesCacheRefreshOnRead": true

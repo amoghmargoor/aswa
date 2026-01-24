@@ -1,0 +1,77 @@
+[tool.poetry]
+name = "aswa-ingestion"
+version = "0.1.0"
+description = "ASWA Ingestion Service - Document ingestion and processing pipeline"
+authors = ["ASWA Team"]
+readme = "README.md"
+packages = [{ include = "aswa_ingestion", from = "src" }]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+aswa-common = { path = "../../libs/common-python", develop = true }
+
+# Web Framework
+fastapi = ">=0.109"
+uvicorn = { extras = ["standard"], version = ">=0.27" }
+
+# Async
+httpx = ">=0.26"
+aiofiles = ">=23.2"
+aioboto3 = ">=12.0"
+
+# Database & Cache
+redis = ">=5.0"
+
+# Vector Database
+qdrant-client = ">=1.7"
+
+# Document Processing
+unstructured = { extras = ["pdf", "docx", "md"], version = ">=0.12" }
+tiktoken = ">=0.5"
+python-multipart = ">=0.0.6"
+datasketch = ">=1.6"
+
+# LLM & Embeddings
+openai = ">=1.12"
+
+# Scheduling
+croniter = ">=2.0"
+apscheduler = ">=3.10"
+
+# Observability
+prometheus-client = ">=0.19"
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.0"
+pytest-asyncio = ">=0.23"
+pytest-cov = ">=4.1"
+httpx = ">=0.26"
+fakeredis = ">=2.21"
+moto = { extras = ["s3"], version = ">=5.0" }
+respx = ">=0.20"
+
+[tool.poetry.scripts]
+ingestion = "aswa_ingestion.main:run"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v --cov=aswa_ingestion --cov-report=term-missing"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
