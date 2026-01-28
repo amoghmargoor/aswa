@@ -1,169 +1,297 @@
 """Adaptive Card templates for Teams bot."""
 from typing import Any
-from botbuilder.schema import Attachment
+from botbuilder.schema import Attachment, CardAction, ActionTypes
+from botbuilder.core import CardFactory
 
 
 def create_answer_card(
     query: str,
     answer: str,
-    citations: list[dict[str, Any]],
+    citations: list[dict],
     confidence: float,
     query_id: str,
 ) -> Attachment:
-    """Create an answer card.
+    """Create an answer card with citations.
 
     Args:
         query: Original query
-        answer: Answer text
+        answer: Generated answer
         citations: List of citations
         confidence: Confidence score
         query_id: Query identifier
 
     Returns:
-        Attachment with adaptive card
+        Adaptive card attachment
     """
-    confidence_text = _format_confidence(confidence)
+    # Format citations
+    citation_items = []
+    for i, citation in enumerate(citations, 1):
+        doc_name = citation.get("document_name", "Unknown")
+        page = citation.get("page_number")
 
-    body = [
-        {
+        citation_text = f"[{i}] {doc_name}"
+        if page:
+            citation_text += f", p.{page}"
+
+        citation_items.append({
             "type": "TextBlock",
-            "text": "Answer",
-            "weight": "bolder",
-            "size": "medium",
-        },
-        {
-            "type": "TextBlock",
-            "text": answer,
+            "text": citation_text,
+            "size": "Small",
+            "color": "Accent",
             "wrap": True,
-        },
-    ]
-
-    if citations:
-        body.append({
-            "type": "TextBlock",
-            "text": "Sources",
-            "weight": "bolder",
-            "size": "small",
-            "spacing": "medium",
         })
 
-        for i, citation in enumerate(citations[:5], 1):
-            title = citation.get("title", f"Source {i}")
-            body.append({
-                "type": "TextBlock",
-                "text": f"{i}. {title}",
-                "size": "small",
-                "wrap": True,
-            })
-
-    body.append({
-        "type": "TextBlock",
-        "text": f"Confidence: {confidence_text}",
-        "size": "small",
-        "color": "accent",
-        "spacing": "medium",
-    })
+    # Confidence indicator
+    confidence_color = "Good" if confidence >= 0.7 else "Warning" if confidence >= 0.5 else "Attention"
 
     card = {
         "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
         "type": "AdaptiveCard",
         "version": "1.4",
-        "body": body,
+        "body": [
+            {
+                "type": "Container",
+                "items": [
+                    {
+                        "type": "TextBlock",
+                        "text": "Your Question",
+                        "weight": "Bolder",
+                        "size": "Small",
+                        "color": "Accent",
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": query,
+                        "wrap": True,
+                        "isSubtle": True,
+                    },
+                ],
+            },
+            {
+                "type": "Container",
+                "separator": True,
+                "spacing": "Medium",
+                "items": [
+                    {
+                        "type": "TextBlock",
+                        "text": "Answer",
+                        "weight": "Bolder",
+                        "size": "Small",
+                        "color": "Good",
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": answer,
+                        "wrap": True,
+                    },
+                ],
+            },
+        ],
         "actions": [
             {
-                "type": "Action.Execute",
+                "type": "Action.Submit",
                 "title": "Helpful",
-                "verb": "feedback",
                 "data": {
                     "action": {"type": "feedback", "data": {"query_id": query_id, "feedback": "helpful"}},
                 },
             },
             {
-                "type": "Action.Execute",
+                "type": "Action.Submit",
                 "title": "Not Helpful",
-                "verb": "feedback",
                 "data": {
                     "action": {"type": "feedback", "data": {"query_id": query_id, "feedback": "not_helpful"}},
+                },
+            },
+            {
+                "type": "Action.ShowCard",
+                "title": "Refine",
+                "card": {
+                    "type": "AdaptiveCard",
+                    "body": [
+                        {
+                            "type": "Input.Text",
+                            "id": "refined_query",
+                            "placeholder": "Refine your question...",
+                            "isMultiline": True,
+                            "value": query,
+                        },
+                    ],
+                    "actions": [
+                        {
+                            "type": "Action.Submit",
+                            "title": "Ask",
+                            "data": {
+                                "action": {"type": "refine", "data": {}},
+                            },
+                        },
+                    ],
                 },
             },
         ],
     }
 
-    return Attachment(
-        content_type="application/vnd.microsoft.card.adaptive",
-        content=card,
-    )
+    # Add citations section if present
+    if citation_items:
+        card["body"].append({
+            "type": "Container",
+            "separator": True,
+            "spacing": "Medium",
+            "items": [
+                {
+                    "type": "TextBlock",
+                    "text": "Sources",
+                    "weight": "Bolder",
+                    "size": "Small",
+                },
+                *citation_items,
+            ],
+        })
+
+    # Add confidence indicator
+    card["body"].append({
+        "type": "ColumnSet",
+        "separator": True,
+        "spacing": "Small",
+        "columns": [
+            {
+                "type": "Column",
+                "width": "auto",
+                "items": [
+                    {
+                        "type": "TextBlock",
+                        "text": f"Confidence: {confidence:.0%}",
+                        "size": "Small",
+                        "color": confidence_color,
+                    },
+                ],
+            },
+            {
+                "type": "Column",
+                "width": "stretch",
+                "items": [
+                    {
+                        "type": "TextBlock",
+                        "text": f"ID: {query_id[:8]}",
+                        "size": "Small",
+                        "isSubtle": True,
+                        "horizontalAlignment": "Right",
+                    },
+                ],
+            },
+        ],
+    })
+
+    return CardFactory.adaptive_card(card)
 
 
-def create_insights_card(insights: list[dict[str, Any]], insight_type: str) -> Attachment:
-    """Create an insights card.
+def create_insights_card(
+    insights: list[dict],
+    insight_type: str = "all",
+) -> Attachment:
+    """Create a card displaying insights.
 
     Args:
         insights: List of insights
-        insight_type: Type of insights
+        insight_type: Type filter label
 
     Returns:
-        Attachment with adaptive card
+        Adaptive card attachment
     """
-    title = f"{insight_type.title()} Insights" if insight_type != "all" else "All Insights"
+    insight_items = []
 
-    body = [
-        {
-            "type": "TextBlock",
-            "text": title,
-            "weight": "bolder",
-            "size": "medium",
-        },
-    ]
+    for insight in insights[:5]:
+        title = insight.get("title", "Untitled")
+        description = insight.get("description", "")[:150]
+        confidence = insight.get("confidence", 0)
+        itype = insight.get("type", "unknown")
 
-    if not insights:
-        body.append({
-            "type": "TextBlock",
-            "text": "No insights found.",
-            "wrap": True,
-        })
-    else:
-        for insight in insights[:10]:
-            insight_title = insight.get("title", "Untitled")
-            description = insight.get("description", "")
-            confidence = insight.get("confidence", 0)
+        color = "Attention" if itype == "risk" else "Good" if itype == "opportunity" else "Default"
 
-            body.extend([
+        insight_items.append({
+            "type": "Container",
+            "separator": True,
+            "spacing": "Medium",
+            "items": [
                 {
-                    "type": "TextBlock",
-                    "text": insight_title,
-                    "weight": "bolder",
-                    "size": "small",
-                    "spacing": "medium",
+                    "type": "ColumnSet",
+                    "columns": [
+                        {
+                            "type": "Column",
+                            "width": "stretch",
+                            "items": [
+                                {
+                                    "type": "TextBlock",
+                                    "text": title,
+                                    "weight": "Bolder",
+                                    "wrap": True,
+                                    "color": color,
+                                },
+                            ],
+                        },
+                        {
+                            "type": "Column",
+                            "width": "auto",
+                            "items": [
+                                {
+                                    "type": "TextBlock",
+                                    "text": f"{confidence:.0%}",
+                                    "size": "Small",
+                                    "isSubtle": True,
+                                },
+                            ],
+                        },
+                    ],
                 },
                 {
                     "type": "TextBlock",
-                    "text": description[:200],
+                    "text": description + "..." if len(description) >= 150 else description,
                     "wrap": True,
-                    "size": "small",
+                    "size": "Small",
                 },
-                {
-                    "type": "TextBlock",
-                    "text": f"Confidence: {_format_confidence(confidence)}",
-                    "size": "small",
-                    "color": "accent",
-                },
-            ])
+            ],
+        })
 
     card = {
         "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
         "type": "AdaptiveCard",
         "version": "1.4",
-        "body": body,
+        "body": [
+            {
+                "type": "TextBlock",
+                "text": f"{insight_type.title()} Insights",
+                "weight": "Bolder",
+                "size": "Large",
+            },
+            *insight_items,
+        ],
+        "actions": [
+            {
+                "type": "Action.Submit",
+                "title": "View Risks",
+                "data": {"action": {"type": "insights", "data": {"type": "risks"}}},
+            },
+            {
+                "type": "Action.Submit",
+                "title": "View Opportunities",
+                "data": {"action": {"type": "insights", "data": {"type": "opportunities"}}},
+            },
+        ],
     }
 
-    return Attachment(
-        content_type="application/vnd.microsoft.card.adaptive",
-        content=card,
-    )
+    if not insight_items:
+        card["body"].append({
+            "type": "TextBlock",
+            "text": "No insights found.",
+            "isSubtle": True,
+        })
+
+    return CardFactory.adaptive_card(card)
 
 
-def create_error_card(title: str, message: str) -> Attachment:
+def create_error_card(
+    title: str,
+    message: str,
+) -> Attachment:
     """Create an error card.
 
     Args:
@@ -171,7 +299,7 @@ def create_error_card(title: str, message: str) -> Attachment:
         message: Error message
 
     Returns:
-        Attachment with adaptive card
+        Adaptive card attachment
     """
     card = {
         "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
@@ -179,33 +307,36 @@ def create_error_card(title: str, message: str) -> Attachment:
         "version": "1.4",
         "body": [
             {
-                "type": "TextBlock",
-                "text": f"❌ {title}",
-                "weight": "bolder",
-                "color": "attention",
-            },
-            {
-                "type": "TextBlock",
-                "text": message,
-                "wrap": True,
+                "type": "Container",
+                "style": "attention",
+                "items": [
+                    {
+                        "type": "TextBlock",
+                        "text": title,
+                        "weight": "Bolder",
+                        "color": "Attention",
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": message,
+                        "wrap": True,
+                    },
+                ],
             },
         ],
     }
 
-    return Attachment(
-        content_type="application/vnd.microsoft.card.adaptive",
-        content=card,
-    )
+    return CardFactory.adaptive_card(card)
 
 
-def create_welcome_card(bot_name: str) -> Attachment:
+def create_welcome_card(bot_name: str = "ASWA") -> Attachment:
     """Create a welcome card.
 
     Args:
         bot_name: Bot display name
 
     Returns:
-        Attachment with adaptive card
+        Adaptive card attachment
     """
     card = {
         "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
@@ -213,47 +344,56 @@ def create_welcome_card(bot_name: str) -> Attachment:
         "version": "1.4",
         "body": [
             {
-                "type": "TextBlock",
-                "text": f"Welcome to {bot_name}!",
-                "weight": "bolder",
-                "size": "large",
+                "type": "Container",
+                "items": [
+                    {
+                        "type": "TextBlock",
+                        "text": f"Welcome to {bot_name}!",
+                        "weight": "Bolder",
+                        "size": "Large",
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "I'm your AI-powered document intelligence assistant. I can help you find information, identify risks, and discover opportunities in your documents.",
+                        "wrap": True,
+                    },
+                ],
             },
             {
-                "type": "TextBlock",
-                "text": "I'm your AI-powered document intelligence assistant. Ask me questions about your documents!",
-                "wrap": True,
+                "type": "Container",
+                "separator": True,
+                "spacing": "Medium",
+                "items": [
+                    {
+                        "type": "TextBlock",
+                        "text": "Getting Started",
+                        "weight": "Bolder",
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "1. Link your account: `link <tenant-id>`\n2. Ask questions: Just type your question\n3. View insights: Type `insights`",
+                        "wrap": True,
+                    },
+                ],
             },
+        ],
+        "actions": [
             {
-                "type": "TextBlock",
-                "text": "Getting Started",
-                "weight": "bolder",
-                "spacing": "medium",
-            },
-            {
-                "type": "TextBlock",
-                "text": "1. Link your account: `link <tenant-id>`\n2. Ask questions about your documents\n3. View insights: `insights` or `insights risks`",
-                "wrap": True,
-            },
-            {
-                "type": "TextBlock",
-                "text": "Type `help` for more commands.",
-                "size": "small",
-                "spacing": "medium",
+                "type": "Action.Submit",
+                "title": "View Help",
+                "data": {"action": {"type": "help"}},
             },
         ],
     }
 
-    return Attachment(
-        content_type="application/vnd.microsoft.card.adaptive",
-        content=card,
-    )
+    return CardFactory.adaptive_card(card)
 
 
 def create_help_card() -> Attachment:
     """Create a help card.
 
     Returns:
-        Attachment with adaptive card
+        Adaptive card attachment
     """
     card = {
         "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
@@ -263,59 +403,234 @@ def create_help_card() -> Attachment:
             {
                 "type": "TextBlock",
                 "text": "ASWA Help",
-                "weight": "bolder",
-                "size": "large",
+                "weight": "Bolder",
+                "size": "Large",
             },
             {
-                "type": "TextBlock",
-                "text": "Commands",
-                "weight": "bolder",
-                "spacing": "medium",
-            },
-            {
-                "type": "FactSet",
-                "facts": [
-                    {"title": "help", "value": "Show this help message"},
-                    {"title": "status", "value": "Check service status"},
-                    {"title": "link <tenant-id>", "value": "Link to ASWA tenant"},
-                    {"title": "insights", "value": "View all insights"},
-                    {"title": "insights <type>", "value": "View insights by type (risks, opportunities, trends)"},
+                "type": "Container",
+                "separator": True,
+                "items": [
+                    {
+                        "type": "TextBlock",
+                        "text": "**Commands:**",
+                        "weight": "Bolder",
+                    },
+                    {
+                        "type": "FactSet",
+                        "facts": [
+                            {"title": "help", "value": "Show this help message"},
+                            {"title": "status", "value": "Check system status"},
+                            {"title": "link <id>", "value": "Link to ASWA tenant"},
+                            {"title": "insights", "value": "View recent insights"},
+                            {"title": "insights risks", "value": "View risk insights"},
+                        ],
+                    },
                 ],
             },
             {
-                "type": "TextBlock",
-                "text": "Examples",
-                "weight": "bolder",
-                "spacing": "medium",
-            },
-            {
-                "type": "TextBlock",
-                "text": "• What are the main risks in Q4 report?\n• Summarize the financial highlights\n• Compare revenue across regions",
-                "wrap": True,
+                "type": "Container",
+                "separator": True,
+                "items": [
+                    {
+                        "type": "TextBlock",
+                        "text": "**Examples:**",
+                        "weight": "Bolder",
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "- What are the main risks in the Q4 report?\n- Summarize the financial highlights\n- Compare revenue across regions",
+                        "wrap": True,
+                    },
+                ],
             },
         ],
     }
 
-    return Attachment(
-        content_type="application/vnd.microsoft.card.adaptive",
-        content=card,
-    )
+    return CardFactory.adaptive_card(card)
 
 
-def _format_confidence(confidence: float) -> str:
-    """Format confidence score.
+def create_digest_card(
+    digest: dict,
+    period: str = "daily",
+) -> Attachment:
+    """Create a digest summary card.
 
     Args:
-        confidence: Confidence value (0-1)
+        digest: Digest data
+        period: Digest period
 
     Returns:
-        Formatted string
+        Adaptive card attachment
     """
-    percentage = int(confidence * 100)
+    sections = []
 
-    if percentage >= 80:
-        return f"High ({percentage}%)"
-    elif percentage >= 50:
-        return f"Medium ({percentage}%)"
-    else:
-        return f"Low ({percentage}%)"
+    for section in digest.get("sections", []):
+        section_name = section.get("name", "")
+        items = section.get("items", [])
+
+        if items:
+            item_texts = []
+            for item in items[:3]:
+                title = item.get("title", "")
+                item_texts.append(f"- {title}")
+
+            sections.append({
+                "type": "Container",
+                "separator": True,
+                "items": [
+                    {
+                        "type": "TextBlock",
+                        "text": section_name,
+                        "weight": "Bolder",
+                        "size": "Small",
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": "\n".join(item_texts),
+                        "wrap": True,
+                        "size": "Small",
+                    },
+                ],
+            })
+
+    card = {
+        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+        "type": "AdaptiveCard",
+        "version": "1.4",
+        "body": [
+            {
+                "type": "TextBlock",
+                "text": f"{period.title()} Digest",
+                "weight": "Bolder",
+                "size": "Large",
+            },
+            {
+                "type": "TextBlock",
+                "text": digest.get("summary", "No summary available."),
+                "wrap": True,
+            },
+            *sections,
+        ],
+        "actions": [
+            {
+                "type": "Action.Submit",
+                "title": "View Weekly",
+                "data": {"action": {"type": "digest", "data": {"period": "weekly"}}},
+            },
+        ],
+    }
+
+    return CardFactory.adaptive_card(card)
+
+
+def create_feedback_card(query_id: str) -> Attachment:
+    """Create a detailed feedback card.
+
+    Args:
+        query_id: Query identifier
+
+    Returns:
+        Adaptive card attachment
+    """
+    card = {
+        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+        "type": "AdaptiveCard",
+        "version": "1.4",
+        "body": [
+            {
+                "type": "TextBlock",
+                "text": "Provide Feedback",
+                "weight": "Bolder",
+                "size": "Large",
+            },
+            {
+                "type": "TextBlock",
+                "text": "Help us improve by telling us what went wrong.",
+                "wrap": True,
+            },
+            {
+                "type": "Input.ChoiceSet",
+                "id": "issue_type",
+                "label": "What was the issue?",
+                "isRequired": True,
+                "choices": [
+                    {"title": "Incorrect answer", "value": "incorrect"},
+                    {"title": "Missing information", "value": "incomplete"},
+                    {"title": "Wrong sources cited", "value": "wrong_sources"},
+                    {"title": "Confusing response", "value": "confusing"},
+                    {"title": "Other", "value": "other"},
+                ],
+            },
+            {
+                "type": "Input.Text",
+                "id": "feedback_text",
+                "label": "Additional details (optional)",
+                "isMultiline": True,
+                "placeholder": "Tell us more...",
+            },
+        ],
+        "actions": [
+            {
+                "type": "Action.Submit",
+                "title": "Submit Feedback",
+                "data": {
+                    "action": {
+                        "type": "detailed_feedback",
+                        "data": {"query_id": query_id},
+                    },
+                },
+            },
+        ],
+    }
+
+    return CardFactory.adaptive_card(card)
+
+
+def create_query_form_card() -> Attachment:
+    """Create a query input form card.
+
+    Returns:
+        Adaptive card attachment
+    """
+    card = {
+        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+        "type": "AdaptiveCard",
+        "version": "1.4",
+        "body": [
+            {
+                "type": "TextBlock",
+                "text": "Ask ASWA",
+                "weight": "Bolder",
+                "size": "Large",
+            },
+            {
+                "type": "Input.Text",
+                "id": "query",
+                "label": "Your question",
+                "isRequired": True,
+                "isMultiline": True,
+                "placeholder": "What would you like to know?",
+            },
+            {
+                "type": "Input.ChoiceSet",
+                "id": "query_type",
+                "label": "Query type (optional)",
+                "choices": [
+                    {"title": "General question", "value": "general"},
+                    {"title": "Find risks", "value": "risks"},
+                    {"title": "Find opportunities", "value": "opportunities"},
+                    {"title": "Summarize", "value": "summary"},
+                ],
+                "value": "general",
+            },
+        ],
+        "actions": [
+            {
+                "type": "Action.Submit",
+                "title": "Ask",
+                "data": {"action": {"type": "query"}},
+            },
+        ],
+    }
+
+    return CardFactory.adaptive_card(card)
