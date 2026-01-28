@@ -102,13 +102,13 @@ cd services/web-dashboard && npm test && npm run build
 Output integrations enable webhooks, Jira integration, and notifications.
 
 ### Integration Service
-- [ ] `prompts/phase6/task-6.1.1-integration-service-setup.md` - Integration service setup
-- [ ] `prompts/phase6/task-6.1.2-webhook-management.md` - Webhook registration and delivery
+- [x] `prompts/phase6/task-6.1.1-integration-service-setup.md` - Integration service setup
+- [x] `prompts/phase6/task-6.1.2-webhook-management.md` - Webhook registration and delivery
 
 ### Jira Integration
-- [ ] `prompts/phase6/task-6.2.1-jira-connection.md` - Jira OAuth connection
-- [ ] `prompts/phase6/task-6.2.2-issue-creation.md` - Automatic issue creation from insights
-- [ ] `prompts/phase6/task-6.2.3-bidirectional-sync.md` - Bidirectional sync with Jira
+- [x] `prompts/phase6/task-6.2.1-jira-connection.md` - Jira OAuth connection
+- [x] `prompts/phase6/task-6.2.2-issue-creation.md` - Automatic issue creation from insights
+- [x] `prompts/phase6/task-6.2.3-bidirectional-sync.md` - Bidirectional sync with Jira
 
 ### Notifications
 - [ ] `prompts/phase6/task-6.3.1-notification-service.md` - Core notification service
