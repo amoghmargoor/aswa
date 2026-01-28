@@ -54,7 +54,7 @@ The Query Service handles natural language queries against processed documents u
 ### RAG Pipeline
 - [x] `prompts/phase4/task-4.2.1-context-retrieval.md` - Context retrieval from vector store
 - [x] `prompts/phase4/task-4.2.2-answer-generation.md` - LLM answer generation with citations
-- [ ] `prompts/phase4/task-4.2.3-query-caching.md` - Query result caching
+- [x] `prompts/phase4/task-4.2.3-query-caching.md` - Query result caching
 
 ### Analytics Generation
 - [ ] `prompts/phase4/task-4.3.1-digest-generation.md` - Automated digest/summary generation
