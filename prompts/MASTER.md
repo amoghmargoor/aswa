@@ -49,11 +49,11 @@ The Query Service handles natural language queries against processed documents u
 
 ### Query API
 - [x] `prompts/phase4/task-4.1.1-query-service-setup.md` - Query service setup and API endpoints
-- [ ] `prompts/phase4/task-4.1.2-query-parser.md` - Natural language query parsing
+- [x] `prompts/phase4/task-4.1.2-query-parser.md` - Natural language query parsing
 
 ### RAG Pipeline
-- [ ] `prompts/phase4/task-4.2.1-context-retrieval.md` - Context retrieval from vector store
-- [ ] `prompts/phase4/task-4.2.2-answer-generation.md` - LLM answer generation with citations
+- [x] `prompts/phase4/task-4.2.1-context-retrieval.md` - Context retrieval from vector store
+- [x] `prompts/phase4/task-4.2.2-answer-generation.md` - LLM answer generation with citations
 - [ ] `prompts/phase4/task-4.2.3-query-caching.md` - Query result caching
 
 ### Analytics Generation
