@@ -257,12 +257,12 @@ class StructuredExtractor:
 
     def _get_insights_from_response(self, response: BaseModel) -> list:
         """Extract insight list from response model."""
-        data = response.model_dump()
-
-        # Look for common list fields
+        # Look for common list fields on the model directly
         for field_name in ["entities", "risks", "opportunities", "patterns"]:
-            if field_name in data and isinstance(data[field_name], list):
-                return data[field_name]
+            if hasattr(response, field_name):
+                items = getattr(response, field_name)
+                if isinstance(items, list):
+                    return items
 
         return []
 

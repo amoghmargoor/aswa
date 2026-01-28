@@ -23,18 +23,43 @@ This document orchestrates the implementation of ASWA (AI-powered Strategic Work
 
 ---
 
+## Phase 3: Insight Service - Extraction Pipeline (5 tasks)
+
+Starting from task 3.3.2 - the map-reduce extraction pattern and onwards.
+
+### Extraction Pipeline
+- [ ] `prompts/phase3/task-3.3.2-map-reduce.md` - Map-reduce pattern for large documents
+- [x] `prompts/phase3/task-3.3.3-batch-extraction.md` - Batch processing for multiple documents
+
+### Insight Storage
+- [ ] `prompts/phase3/task-3.4.1-insight-repository.md` - Insight persistence and retrieval
+- [ ] `prompts/phase3/task-3.4.2-entity-graph.md` - Entity relationship graph
+- [ ] `prompts/phase3/task-3.4.3-feedback-loop.md` - User feedback integration
+
+**Phase 3 Verification:**
+```bash
+cd services/insight-service && pytest tests/ -v
+```
+
+---
+
 ## Phase 4: Query Service (8 tasks)
 
 The Query Service handles natural language queries against processed documents using RAG (Retrieval-Augmented Generation).
 
-- [ ] `prompts/phase4/task-4.1.1-query-api.md` - Query API endpoints and request handling
+### Query API
+- [ ] `prompts/phase4/task-4.1.1-query-service-setup.md` - Query service setup and API endpoints
 - [ ] `prompts/phase4/task-4.1.2-query-parser.md` - Natural language query parsing
-- [ ] `prompts/phase4/task-4.2.1-context-builder.md` - Context assembly from retrieved documents
-- [ ] `prompts/phase4/task-4.2.2-retrieval-service.md` - Vector search and document retrieval
-- [ ] `prompts/phase4/task-4.3.1-llm-integration.md` - LLM provider abstraction (OpenAI/Anthropic)
-- [ ] `prompts/phase4/task-4.3.2-response-generator.md` - Response generation with citations
-- [ ] `prompts/phase4/task-4.4.1-query-caching.md` - Query result caching with Redis
-- [ ] `prompts/phase4/task-4.4.2-conversation-memory.md` - Multi-turn conversation support
+
+### RAG Pipeline
+- [ ] `prompts/phase4/task-4.2.1-context-retrieval.md` - Context retrieval from vector store
+- [ ] `prompts/phase4/task-4.2.2-answer-generation.md` - LLM answer generation with citations
+- [ ] `prompts/phase4/task-4.2.3-query-caching.md` - Query result caching
+
+### Analytics Generation
+- [ ] `prompts/phase4/task-4.3.1-digest-generation.md` - Automated digest/summary generation
+- [ ] `prompts/phase4/task-4.3.2-trend-detection.md` - Trend detection across documents
+- [ ] `prompts/phase4/task-4.3.3-anomaly-detection.md` - Anomaly detection in insights
 
 **Phase 4 Verification:**
 ```bash
@@ -45,25 +70,28 @@ cd services/query-service && pytest tests/ -v
 
 ## Phase 5: Interface Layer (10 tasks)
 
-The Interface Layer includes the API Gateway and Web Dashboard for user interaction.
+The Interface Layer includes Slack/Teams bots and Web Dashboard for user interaction.
 
-### API Gateway (Java/Spring Boot)
-- [ ] `prompts/phase5/task-5.1.1-gateway-routing.md` - Request routing to microservices
-- [ ] `prompts/phase5/task-5.1.2-gateway-auth.md` - Authentication middleware
-- [ ] `prompts/phase5/task-5.1.3-gateway-rate-limiting.md` - Rate limiting and throttling
-- [ ] `prompts/phase5/task-5.2.1-api-versioning.md` - API versioning strategy
-- [ ] `prompts/phase5/task-5.2.2-api-documentation.md` - OpenAPI/Swagger documentation
+### Slack Integration
+- [ ] `prompts/phase5/task-5.1.1-slack-bot-setup.md` - Slack bot application setup
+- [ ] `prompts/phase5/task-5.1.2-slash-commands.md` - Slash command handlers
+- [ ] `prompts/phase5/task-5.1.3-interactive-components.md` - Interactive message components
+- [ ] `prompts/phase5/task-5.1.4-event-handlers.md` - Slack event handling
+
+### Microsoft Teams Integration
+- [ ] `prompts/phase5/task-5.2.1-teams-bot-setup.md` - Teams bot application setup
+- [ ] `prompts/phase5/task-5.2.2-adaptive-cards.md` - Adaptive cards for rich UI
 
 ### Web Dashboard (React/TypeScript)
-- [ ] `prompts/phase5/task-5.3.1-dashboard-layout.md` - Main layout and navigation
-- [ ] `prompts/phase5/task-5.3.2-dashboard-documents.md` - Document management UI
-- [ ] `prompts/phase5/task-5.3.3-dashboard-query.md` - Query interface with chat
-- [ ] `prompts/phase5/task-5.3.4-dashboard-insights.md` - Insights visualization
-- [ ] `prompts/phase5/task-5.3.5-dashboard-settings.md` - Settings and user preferences
+- [ ] `prompts/phase5/task-5.3.1-react-dashboard-setup.md` - React dashboard setup
+- [ ] `prompts/phase5/task-5.3.2-authentication-ui.md` - Authentication UI components
+- [ ] `prompts/phase5/task-5.3.3-query-interface.md` - Query interface with chat
+- [ ] `prompts/phase5/task-5.3.4-analytics-dashboard.md` - Analytics and visualization
 
 **Phase 5 Verification:**
 ```bash
-cd services/api-gateway && ./gradlew test
+cd services/slack-bot && pytest tests/ -v
+cd services/teams-bot && pytest tests/ -v
 cd services/web-dashboard && npm test && npm run build
 ```
 
@@ -71,25 +99,25 @@ cd services/web-dashboard && npm test && npm run build
 
 ## Phase 6: Output Integrations (8 tasks)
 
-Output integrations enable exporting data and connecting to external systems.
+Output integrations enable webhooks, Jira integration, and notifications.
 
-### Export System
-- [ ] `prompts/phase6/task-6.1.1-export-pdf.md` - PDF report generation
-- [ ] `prompts/phase6/task-6.1.2-export-excel.md` - Excel/CSV export
-- [ ] `prompts/phase6/task-6.1.3-export-templates.md` - Custom export templates
+### Integration Service
+- [ ] `prompts/phase6/task-6.1.1-integration-service-setup.md` - Integration service setup
+- [ ] `prompts/phase6/task-6.1.2-webhook-management.md` - Webhook registration and delivery
+
+### Jira Integration
+- [ ] `prompts/phase6/task-6.2.1-jira-connection.md` - Jira OAuth connection
+- [ ] `prompts/phase6/task-6.2.2-issue-creation.md` - Automatic issue creation from insights
+- [ ] `prompts/phase6/task-6.2.3-bidirectional-sync.md` - Bidirectional sync with Jira
 
 ### Notifications
 - [ ] `prompts/phase6/task-6.3.1-notification-service.md` - Core notification service
 - [ ] `prompts/phase6/task-6.3.2-email-notifications.md` - Email delivery (SendGrid/SES)
 - [ ] `prompts/phase6/task-6.3.3-push-notifications.md` - Push notifications (FCM/APNs)
 
-### Webhooks & API
-- [ ] `prompts/phase6/task-6.2.1-webhook-system.md` - Outbound webhook delivery
-- [ ] `prompts/phase6/task-6.2.2-api-integrations.md` - Third-party API integrations
-
 **Phase 6 Verification:**
 ```bash
-cd services/export-service && pytest tests/ -v
+cd services/integration-service && pytest tests/ -v
 cd services/notification-service && pytest tests/ -v
 ```
 
@@ -165,12 +193,13 @@ pytest tests/ -v -k security
 
 | Phase | Description | Tasks | Status |
 |-------|-------------|-------|--------|
+| 3 | Insight Service (from 3.3.2) | 5 | Not Started |
 | 4 | Query Service | 8 | Not Started |
 | 5 | Interface Layer | 10 | Not Started |
 | 6 | Output Integrations | 8 | Not Started |
 | 7 | Infrastructure & DevOps | 16 | Not Started |
 | 8 | Security & Compliance | 9 | Not Started |
-| **Total** | | **51** | |
+| **Total** | | **56** | |
 
 ---
 
@@ -179,15 +208,15 @@ pytest tests/ -v -k security
 Run this command in Claude Code:
 
 ```
-Read this file (prompts/MASTER.md) and begin implementation starting with Phase 4.
+Read this file (prompts/MASTER.md) and begin implementation starting with Phase 3.
 For each task:
 1. Read the task file
 2. Implement all specified code
 3. Run verification steps
-4. Check off the task in this file
+4. Check off the task in this file (change [ ] to [x])
 5. Proceed to next task
 
-Start now with: prompts/phase4/task-4.1.1-query-api.md
+Start now with: prompts/phase3/task-3.3.2-map-reduce.md
 ```
 
 ---
@@ -197,5 +226,25 @@ Start now with: prompts/phase4/task-4.1.1-query-api.md
 If implementation was interrupted, find the last checked task above and resume with:
 
 ```
-Read prompts/MASTER.md, find the first unchecked task, read that task file, and continue implementation from there.
+Read prompts/MASTER.md, find the first unchecked task ([ ]), read that task file, and continue implementation from there.
+```
+
+---
+
+## Quick Commands
+
+**Check progress:**
+```bash
+grep -c "\[x\]" prompts/MASTER.md  # Completed tasks
+grep -c "\[ \]" prompts/MASTER.md  # Remaining tasks
+```
+
+**Commit after phase completion:**
+```bash
+git add -A && git commit -m "Complete Phase X implementation"
+```
+
+**Run all tests:**
+```bash
+./scripts/dev.sh test all
 ```

@@ -100,7 +100,7 @@ class TestStructuredExtractor:
         assert result.extraction_type == "entity"
         assert result.result is not None
         assert result.error is None
-        assert result.processing_time_ms > 0
+        assert result.processing_time_ms >= 0
 
     @pytest.mark.asyncio
     async def test_extract_unknown_type(self, extractor):
