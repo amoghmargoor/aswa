@@ -32,9 +32,9 @@ Starting from task 3.3.2 - the map-reduce extraction pattern and onwards.
 - [x] `prompts/phase3/task-3.3.3-batch-extraction.md` - Batch processing for multiple documents
 
 ### Insight Storage
-- [ ] `prompts/phase3/task-3.4.1-insight-repository.md` - Insight persistence and retrieval
-- [ ] `prompts/phase3/task-3.4.2-entity-graph.md` - Entity relationship graph
-- [ ] `prompts/phase3/task-3.4.3-feedback-loop.md` - User feedback integration
+- [x] `prompts/phase3/task-3.4.1-insight-repository.md` - Insight persistence and retrieval
+- [x] `prompts/phase3/task-3.4.2-entity-graph.md` - Entity relationship graph
+- [x] `prompts/phase3/task-3.4.3-feedback-loop.md` - User feedback integration
 
 **Phase 3 Verification:**
 ```bash
