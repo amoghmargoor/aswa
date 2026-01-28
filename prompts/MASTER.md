@@ -167,7 +167,7 @@ docker-compose -f infrastructure/docker/docker-compose.yaml config
 Security implementation including authentication, encryption, and compliance.
 
 ### Authentication
-- [ ] `prompts/phase8/task-8.1.1-auth-jwt-oauth.md` - JWT tokens and OAuth 2.0
+- [x] `prompts/phase8/task-8.1.1-auth-jwt-oauth.md` - JWT tokens and OAuth 2.0
 - [ ] `prompts/phase8/task-8.1.2-auth-session-management.md` - Session management
 - [ ] `prompts/phase8/task-8.1.3-auth-mfa.md` - Multi-factor authentication
 
