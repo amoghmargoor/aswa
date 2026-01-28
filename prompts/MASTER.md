@@ -74,9 +74,9 @@ The Interface Layer includes Slack/Teams bots and Web Dashboard for user interac
 
 ### Slack Integration
 - [x] `prompts/phase5/task-5.1.1-slack-bot-setup.md` - Slack bot application setup
-- [ ] `prompts/phase5/task-5.1.2-slash-commands.md` - Slash command handlers
-- [ ] `prompts/phase5/task-5.1.3-interactive-components.md` - Interactive message components
-- [ ] `prompts/phase5/task-5.1.4-event-handlers.md` - Slack event handling
+- [x] `prompts/phase5/task-5.1.2-slash-commands.md` - Slash command handlers
+- [x] `prompts/phase5/task-5.1.3-interactive-components.md` - Interactive message components
+- [x] `prompts/phase5/task-5.1.4-event-handlers.md` - Slack event handling
 
 ### Microsoft Teams Integration
 - [ ] `prompts/phase5/task-5.2.1-teams-bot-setup.md` - Teams bot application setup
