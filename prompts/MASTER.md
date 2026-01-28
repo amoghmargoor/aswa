@@ -172,13 +172,13 @@ Security implementation including authentication, encryption, and compliance.
 - [x] `prompts/phase8/task-8.1.3-auth-mfa.md` - Multi-factor authentication
 
 ### Data Security
-- [ ] `prompts/phase8/task-8.2.1-data-encryption-at-rest.md` - Encryption at rest (KMS)
-- [ ] `prompts/phase8/task-8.2.2-data-encryption-in-transit.md` - TLS/mTLS configuration
-- [ ] `prompts/phase8/task-8.2.3-data-masking-pii.md` - PII detection and masking
+- [x] `prompts/phase8/task-8.2.1-data-encryption-at-rest.md` - Encryption at rest (KMS)
+- [x] `prompts/phase8/task-8.2.2-data-encryption-in-transit.md` - TLS/mTLS configuration
+- [x] `prompts/phase8/task-8.2.3-data-masking-pii.md` - PII detection and masking
 
 ### Audit & Compliance
-- [ ] `prompts/phase8/task-8.3.1-audit-logging.md` - Audit event logging
-- [ ] `prompts/phase8/task-8.3.2-compliance-reporting.md` - SOC 2/GDPR reports
+- [x] `prompts/phase8/task-8.3.1-audit-logging.md` - Audit event logging
+- [x] `prompts/phase8/task-8.3.2-compliance-reporting.md` - SOC 2/GDPR reports
 - [ ] `prompts/phase8/task-8.3.3-security-scanning.md` - Security scanning pipeline
 
 **Phase 8 Verification:**
