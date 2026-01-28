@@ -48,7 +48,7 @@ cd services/insight-service && pytest tests/ -v
 The Query Service handles natural language queries against processed documents using RAG (Retrieval-Augmented Generation).
 
 ### Query API
-- [ ] `prompts/phase4/task-4.1.1-query-service-setup.md` - Query service setup and API endpoints
+- [x] `prompts/phase4/task-4.1.1-query-service-setup.md` - Query service setup and API endpoints
 - [ ] `prompts/phase4/task-4.1.2-query-parser.md` - Natural language query parsing
 
 ### RAG Pipeline
