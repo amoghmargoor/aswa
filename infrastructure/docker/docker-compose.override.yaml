@@ -1,0 +1,27 @@
+# Override file for local development customization
+version: '3.8'
+
+services:
+  api-gateway:
+    environment:
+      # Add local overrides here
+      - DEBUG=true
+    # Mount additional volumes for development
+    volumes:
+      - ../../services/api-gateway/build:/app/build:ro
+
+  ingestion-service:
+    # Enable debugger
+    command: >
+      python -m debugpy --listen 0.0.0.0:5678 --wait-for-client
+      -m uvicorn aswa_ingestion.main:app --host 0.0.0.0 --port 8001 --reload
+
+  query-service:
+    command: >
+      python -m debugpy --listen 0.0.0.0:5678 --wait-for-client
+      -m uvicorn aswa_query.main:app --host 0.0.0.0 --port 8002 --reload
+
+  insight-service:
+    command: >
+      python -m debugpy --listen 0.0.0.0:5678 --wait-for-client
+      -m uvicorn aswa_insight.main:app --host 0.0.0.0 --port 8003 --reload

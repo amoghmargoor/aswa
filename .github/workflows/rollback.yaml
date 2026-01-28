@@ -1,0 +1,96 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: 'Version to rollback to'
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ github.event.inputs.environment == 'production' && secrets.AWS_ROLE_ARN_PROD || secrets.AWS_ROLE_ARN_STAGING }}
+          aws-region: us-east-1
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          CLUSTER_NAME="aswa-${{ github.event.inputs.environment == 'production' && 'prod' || 'staging' }}"
+          aws eks update-kubeconfig --name $CLUSTER_NAME --region us-east-1
+
+      - name: Verify version exists
+        run: |
+          docker manifest inspect ghcr.io/${{ github.repository_owner }}/aswa/api-gateway:${{ github.event.inputs.version }}
+
+      - name: Record current version
+        id: current
+        run: |
+          NAMESPACE="aswa-${{ github.event.inputs.environment == 'production' && 'prod' || 'staging' }}"
+          CURRENT=$(kubectl get deployment aswa-api-gateway -n $NAMESPACE \
+            -o jsonpath='{.spec.template.spec.containers[0].image}' | cut -d: -f2)
+          echo "current_version=$CURRENT" >> $GITHUB_OUTPUT
+
+      - name: Rollback deployment
+        run: |
+          NAMESPACE="aswa-${{ github.event.inputs.environment == 'production' && 'prod' || 'staging' }}"
+          VALUES_FILE="values-${{ github.event.inputs.environment == 'production' && 'prod' || 'staging' }}.yaml"
+
+          helm upgrade --install aswa infrastructure/helm/charts/aswa \
+            --namespace $NAMESPACE \
+            --values infrastructure/helm/charts/aswa/$VALUES_FILE \
+            --set image.tag=${{ github.event.inputs.version }} \
+            --wait \
+            --timeout 10m
+
+      - name: Verify rollback
+        run: |
+          NAMESPACE="aswa-${{ github.event.inputs.environment == 'production' && 'prod' || 'staging' }}"
+
+          kubectl rollout status deployment/aswa-api-gateway -n $NAMESPACE --timeout=300s
+          kubectl rollout status deployment/aswa-ingestion -n $NAMESPACE --timeout=300s
+          kubectl rollout status deployment/aswa-query -n $NAMESPACE --timeout=300s
+          kubectl rollout status deployment/aswa-insight -n $NAMESPACE --timeout=300s
+
+      - name: Notify rollback
+        uses: slackapi/slack-github-action@v1
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_DEPLOYMENTS }}
+          payload: |
+            {
+              "text": "Rollback completed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Rollback Completed*\n\nEnvironment: ${{ github.event.inputs.environment }}\nRolled back to: ${{ github.event.inputs.version }}\nPrevious: ${{ steps.current.outputs.current_version }}\nActor: ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

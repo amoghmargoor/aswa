@@ -1,0 +1,272 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  api-gateway:
+    build:
+      context: ../..
+      dockerfile: services/api-gateway/Dockerfile
+      target: development
+    ports:
+      - "8000:8000"
+      - "5005:5005"  # Debug port
+    environment:
+      - SPRING_PROFILES_ACTIVE=development
+      - DATABASE_URL=postgresql://aswa:aswa@postgres:5432/aswa
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - INGESTION_SERVICE_URL=http://ingestion-service:8001
+      - QUERY_SERVICE_URL=http://query-service:8002
+      - INSIGHT_SERVICE_URL=http://insight-service:8003
+      - JWT_SECRET=dev-jwt-secret-not-for-production
+      - LOG_LEVEL=DEBUG
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    volumes:
+      - ../../services/api-gateway/src:/app/src:ro
+      - ../../libs/common-java/src:/libs/common-java/src:ro
+      - gradle-cache:/root/.gradle
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - aswa-network
+
+  # Ingestion Service
+  ingestion-service:
+    build:
+      context: ../..
+      dockerfile: services/ingestion-service/Dockerfile
+      target: development
+    ports:
+      - "8001:8001"
+      - "5678:5678"  # Debugpy port
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql+asyncpg://aswa:aswa@postgres:5432/aswa
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - INSIGHT_SERVICE_URL=http://insight-service:8003
+      - S3_ENDPOINT=http://minio:9000
+      - S3_BUCKET=aswa-documents
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - LOG_LEVEL=DEBUG
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    volumes:
+      - ../../services/ingestion-service/src:/app/src
+      - ../../libs/common-python/src:/app/libs/common-python/src
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - aswa-network
+
+  # Query Service
+  query-service:
+    build:
+      context: ../..
+      dockerfile: services/query-service/Dockerfile
+      target: development
+    ports:
+      - "8002:8002"
+      - "5679:5678"  # Debugpy port
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql+asyncpg://aswa:aswa@postgres:5432/aswa
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LOG_LEVEL=DEBUG
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    volumes:
+      - ../../services/query-service/src:/app/src
+      - ../../libs/common-python/src:/app/libs/common-python/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - aswa-network
+
+  # Insight Service
+  insight-service:
+    build:
+      context: ../..
+      dockerfile: services/insight-service/Dockerfile
+      target: development
+    ports:
+      - "8003:8003"
+      - "5680:5678"  # Debugpy port
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql+asyncpg://aswa:aswa@postgres:5432/aswa
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - LOG_LEVEL=DEBUG
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    volumes:
+      - ../../services/insight-service/src:/app/src
+      - ../../libs/common-python/src:/app/libs/common-python/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - aswa-network
+
+  # Web Dashboard
+  web-dashboard:
+    build:
+      context: ../../services/web-dashboard
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      - ../../services/web-dashboard/src:/app/src
+      - ../../services/web-dashboard/public:/app/public
+      - /app/node_modules
+    networks:
+      - aswa-network
+
+  # PostgreSQL
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=aswa
+      - POSTGRES_PASSWORD=aswa
+      - POSTGRES_DB=aswa
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aswa"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aswa-network
+
+  # Redis
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aswa-network
+
+  # Elasticsearch
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    networks:
+      - aswa-network
+
+  # MinIO (S3-compatible storage)
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"  # Console
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aswa-network
+
+  # MinIO bucket setup
+  minio-setup:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/aswa-documents --ignore-existing;
+      mc anonymous set public myminio/aswa-documents;
+      exit 0;
+      "
+    networks:
+      - aswa-network
+
+  # Jaeger (Tracing)
+  jaeger:
+    image: jaegertracing/all-in-one:1.50
+    ports:
+      - "16686:16686"  # UI
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - aswa-network
+
+  # Mailpit (Email testing)
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - aswa-network
+
+volumes:
+  postgres-data:
+  redis-data:
+  elasticsearch-data:
+  minio-data:
+  uploads:
+  gradle-cache:
+
+networks:
+  aswa-network:
+    driver: bridge

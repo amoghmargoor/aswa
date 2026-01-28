@@ -1,24 +1,33 @@
 package com.aswa.common.logging;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Structured logger that wraps SLF4J and provides type-safe field logging.
+ * Structured JSON logger for ASWA services.
  *
  * <p>This logger automatically includes MDC context in all log messages and provides a fluent API
- * for structured logging.
+ * for structured logging with JSON output.
  */
 public final class StructuredLogger {
 
   private final Logger logger;
+  private final ObjectMapper objectMapper;
+  private final String serviceName;
 
   private StructuredLogger(Logger logger) {
     this.logger = logger;
+    this.objectMapper = new ObjectMapper();
+    this.serviceName = System.getenv().getOrDefault("SERVICE_NAME", "unknown");
   }
 
   /**
@@ -51,7 +60,7 @@ public final class StructuredLogger {
    */
   public void info(@NonNull String message, @NonNull Field... fields) {
     if (logger.isInfoEnabled()) {
-      logger.info(formatMessage(message, fields));
+      log("INFO", message, null, fields);
     }
   }
 
@@ -63,7 +72,7 @@ public final class StructuredLogger {
    */
   public void debug(@NonNull String message, @NonNull Field... fields) {
     if (logger.isDebugEnabled()) {
-      logger.debug(formatMessage(message, fields));
+      log("DEBUG", message, null, fields);
     }
   }
 
@@ -75,7 +84,7 @@ public final class StructuredLogger {
    */
   public void warn(@NonNull String message, @NonNull Field... fields) {
     if (logger.isWarnEnabled()) {
-      logger.warn(formatMessage(message, fields));
+      log("WARN", message, null, fields);
     }
   }
 
@@ -87,7 +96,7 @@ public final class StructuredLogger {
    */
   public void error(@NonNull String message, @NonNull Field... fields) {
     if (logger.isErrorEnabled()) {
-      logger.error(formatMessage(message, fields));
+      log("ERROR", message, null, fields);
     }
   }
 
@@ -101,7 +110,7 @@ public final class StructuredLogger {
   public void error(
       @NonNull String message, @NonNull Throwable throwable, @NonNull Field... fields) {
     if (logger.isErrorEnabled()) {
-      logger.error(formatMessage(message, fields), throwable);
+      log("ERROR", message, throwable, fields);
     }
   }
 
@@ -113,27 +122,86 @@ public final class StructuredLogger {
    */
   public void trace(@NonNull String message, @NonNull Field... fields) {
     if (logger.isTraceEnabled()) {
-      logger.trace(formatMessage(message, fields));
+      log("TRACE", message, null, fields);
     }
   }
 
-  private String formatMessage(String message, Field[] fields) {
-    if (fields.length == 0) {
-      return message;
+  private void log(String level, String message, Throwable throwable, Field[] fields) {
+    Map<String, Object> logEntry = new HashMap<>();
+
+    // Base fields
+    logEntry.put("timestamp", Instant.now().toString());
+    logEntry.put("level", level);
+    logEntry.put("message", message);
+    logEntry.put("service", serviceName);
+    logEntry.put("environment", System.getenv().getOrDefault("ENVIRONMENT", "development"));
+    logEntry.put("version", System.getenv().getOrDefault("VERSION", "unknown"));
+
+    // MDC context
+    String requestId = MDC.get("requestId");
+    if (requestId != null) {
+      logEntry.put("request_id", requestId);
     }
 
-    Map<String, Object> fieldMap = new HashMap<>();
+    String tenantId = MDC.get("tenantId");
+    if (tenantId != null) {
+      logEntry.put("tenant_id", tenantId);
+    }
+
+    String userId = MDC.get("userId");
+    if (userId != null) {
+      logEntry.put("user_id", userId);
+    }
+
+    String traceId = MDC.get("traceId");
+    if (traceId != null) {
+      logEntry.put("trace_id", traceId);
+      logEntry.put("span_id", MDC.get("spanId"));
+    }
+
+    // Add custom fields
     for (Field field : fields) {
-      fieldMap.put(field.key(), field.value());
+      logEntry.put(field.key(), field.value());
     }
 
-    // Message with fields appended in JSON-like format
-    // The actual JSON formatting will be done by logback-logstash-encoder
-    StringBuilder sb = new StringBuilder(message);
-    for (Map.Entry<String, Object> entry : fieldMap.entrySet()) {
-      sb.append(" ").append(entry.getKey()).append("=").append(entry.getValue());
+    // Exception handling
+    if (throwable != null) {
+      Map<String, Object> exceptionInfo = new HashMap<>();
+      exceptionInfo.put("type", throwable.getClass().getName());
+      exceptionInfo.put("message", throwable.getMessage());
+
+      StringBuilder stackTrace = new StringBuilder();
+      for (StackTraceElement element : throwable.getStackTrace()) {
+        stackTrace.append(element.toString()).append("\n");
+      }
+      exceptionInfo.put("stacktrace", stackTrace.toString());
+
+      logEntry.put("exception", exceptionInfo);
     }
-    return sb.toString();
+
+    try {
+      String json = objectMapper.writeValueAsString(logEntry);
+      switch (level) {
+        case "ERROR" -> logger.error(json);
+        case "WARN" -> logger.warn(json);
+        case "DEBUG" -> logger.debug(json);
+        case "TRACE" -> logger.trace(json);
+        default -> logger.info(json);
+      }
+    } catch (JsonProcessingException e) {
+      logger.error("Failed to serialize log entry: {}", e.getMessage());
+    }
+  }
+
+  /**
+   * Create a child logger with additional context.
+   *
+   * @param key the context key
+   * @param value the context value
+   * @return a context builder
+   */
+  public ContextBuilder with(String key, Object value) {
+    return new ContextBuilder(this).with(key, value);
   }
 
   /**
@@ -154,6 +222,66 @@ public final class StructuredLogger {
     @NonNull
     public static Field of(@NonNull String key, @Nullable Object value) {
       return new Field(key, value);
+    }
+  }
+
+  /**
+   * Builder for adding temporary context to log messages.
+   */
+  public static class ContextBuilder {
+    private final StructuredLogger logger;
+    private final Map<String, Object> context = new HashMap<>();
+
+    ContextBuilder(StructuredLogger logger) {
+      this.logger = logger;
+    }
+
+    /**
+     * Adds a context value.
+     *
+     * @param key the context key
+     * @param value the context value
+     * @return this builder
+     */
+    public ContextBuilder with(String key, Object value) {
+      context.put(key, value);
+      return this;
+    }
+
+    /**
+     * Logs an info message with the accumulated context.
+     *
+     * @param message the message
+     */
+    public void info(String message) {
+      logWithContext("INFO", message, null);
+    }
+
+    /**
+     * Logs an error message with the accumulated context.
+     *
+     * @param message the message
+     * @param throwable the throwable
+     */
+    public void error(String message, Throwable throwable) {
+      logWithContext("ERROR", message, throwable);
+    }
+
+    private void logWithContext(String level, String message, Throwable throwable) {
+      for (Map.Entry<String, Object> entry : context.entrySet()) {
+        MDC.put(entry.getKey(), String.valueOf(entry.getValue()));
+      }
+      try {
+        if (throwable != null) {
+          logger.error(message, throwable);
+        } else {
+          logger.info(message);
+        }
+      } finally {
+        for (String key : context.keySet()) {
+          MDC.remove(key);
+        }
+      }
     }
   }
 }

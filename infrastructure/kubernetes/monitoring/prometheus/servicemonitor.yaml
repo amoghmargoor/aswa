@@ -1,0 +1,98 @@
+# API Gateway ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aswa-api-gateway
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/component: api-gateway
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aswa
+      app.kubernetes.io/component: api-gateway
+  namespaceSelector:
+    matchNames:
+      - aswa-prod
+      - aswa-staging
+  endpoints:
+    - port: metrics
+      interval: 15s
+      path: /metrics
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: namespace
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
+        - sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+          targetLabel: component
+---
+# Ingestion Service ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aswa-ingestion
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/component: ingestion
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aswa
+      app.kubernetes.io/component: ingestion
+  namespaceSelector:
+    matchNames:
+      - aswa-prod
+      - aswa-staging
+  endpoints:
+    - port: metrics
+      interval: 15s
+      path: /metrics
+---
+# Query Service ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aswa-query
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/component: query
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aswa
+      app.kubernetes.io/component: query
+  namespaceSelector:
+    matchNames:
+      - aswa-prod
+      - aswa-staging
+  endpoints:
+    - port: metrics
+      interval: 15s
+      path: /metrics
+---
+# Insight Service ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aswa-insight
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/component: insight
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aswa
+      app.kubernetes.io/component: insight
+  namespaceSelector:
+    matchNames:
+      - aswa-prod
+      - aswa-staging
+  endpoints:
+    - port: metrics
+      interval: 15s
+      path: /metrics

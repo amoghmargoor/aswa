@@ -1,4 +1,5 @@
 .PHONY: help setup build test test-java test-python lint format clean docker-build docker-push helm-lint
+.PHONY: up down logs status shell db-migrate db-seed db-reset api-client
 
 # Colors for output
 BLUE := \033[0;34m
@@ -14,22 +15,7 @@ help: ## Show this help message
 	@echo ''
 
 setup: ## Install all dependencies (Gradle, Poetry, pre-commit)
-	@echo "$(BLUE)Installing dependencies...$(NC)"
-	@if ! command -v java >/dev/null 2>&1; then \
-		echo "$(YELLOW)Warning: Java 21 not found. Please install Java 21.$(NC)"; \
-	fi
-	@if ! command -v python3 >/dev/null 2>&1; then \
-		echo "$(YELLOW)Warning: Python 3.11+ not found. Please install Python 3.11+.$(NC)"; \
-	fi
-	@if ! command -v poetry >/dev/null 2>&1; then \
-		echo "$(YELLOW)Installing Poetry...$(NC)"; \
-		curl -sSL https://install.python-poetry.org | python3 -; \
-	fi
-	@echo "$(GREEN)Installing Python dependencies...$(NC)"
-	poetry install --no-root
-	@echo "$(GREEN)Installing pre-commit hooks...$(NC)"
-	poetry run pre-commit install
-	@echo "$(GREEN)Setup complete!$(NC)"
+	@./scripts/dev.sh setup
 
 build: ## Build all services (Java and Python)
 	@echo "$(BLUE)Building all services...$(NC)"
@@ -50,6 +36,18 @@ test-python: ## Run Python tests only
 	@echo "$(BLUE)Running Python tests...$(NC)"
 	poetry run pytest --cov --cov-report=html --cov-report=term
 	@echo "$(GREEN)Python tests complete!$(NC)"
+
+test-ingestion: ## Run ingestion service tests
+	@./scripts/dev.sh test ingestion
+
+test-query: ## Run query service tests
+	@./scripts/dev.sh test query
+
+test-insight: ## Run insight service tests
+	@./scripts/dev.sh test insight
+
+test-web: ## Run web dashboard tests
+	@./scripts/dev.sh test web
 
 lint: ## Run all linters (Java and Python)
 	@echo "$(BLUE)Running linters...$(NC)"
@@ -84,13 +82,7 @@ clean: ## Clean all build artifacts
 	@echo "$(GREEN)Clean complete!$(NC)"
 
 docker-build: ## Build all Docker images
-	@echo "$(BLUE)Building Docker images...$(NC)"
-	@if [ ! -f docker-compose.yml ]; then \
-		echo "$(YELLOW)Warning: docker-compose.yml not found. Skipping Docker build.$(NC)"; \
-		exit 0; \
-	fi
-	docker-compose build
-	@echo "$(GREEN)Docker images built!$(NC)"
+	@./scripts/dev.sh build
 
 docker-push: ## Push Docker images to registry
 	@echo "$(BLUE)Pushing Docker images...$(NC)"
@@ -98,11 +90,7 @@ docker-push: ## Push Docker images to registry
 		echo "$(YELLOW)Warning: DOCKER_REGISTRY not set. Set it with: export DOCKER_REGISTRY=<your-registry>$(NC)"; \
 		exit 1; \
 	fi
-	@if [ ! -f docker-compose.yml ]; then \
-		echo "$(YELLOW)Warning: docker-compose.yml not found. Skipping Docker push.$(NC)"; \
-		exit 0; \
-	fi
-	docker-compose push
+	docker-compose -f infrastructure/docker/docker-compose.yaml push
 	@echo "$(GREEN)Docker images pushed!$(NC)"
 
 helm-lint: ## Lint Helm charts
@@ -119,92 +107,53 @@ helm-lint: ## Lint Helm charts
 	done
 	@echo "$(GREEN)Helm lint complete!$(NC)"
 
-dev-up: ## Start local development environment (Docker Compose)
-	@echo "$(BLUE)Starting development environment...$(NC)"
-	@if [ ! -f docker-compose.yml ]; then \
-		echo "$(YELLOW)Warning: docker-compose.yml not found.$(NC)"; \
-		exit 1; \
-	fi
-	docker-compose up -d
-	@echo "$(GREEN)Development environment started!$(NC)"
-	@echo ""
-	@echo "$(BLUE)Services:$(NC)"
-	@echo "  PostgreSQL:      localhost:5432"
-	@echo "  Redis:           localhost:6379"
-	@echo "$(YELLOW)To start API Gateway: make dev-services$(NC)"
-	@echo "$(YELLOW)To start management tools: make dev-tools$(NC)"
+# Development environment commands
+up: ## Start local development environment
+	@./scripts/dev.sh up
 
-dev-services: ## Start development environment with all services
-	@echo "$(BLUE)Starting development environment with services...$(NC)"
-	docker-compose --profile services up -d
-	@echo "$(GREEN)All services started!$(NC)"
-	@echo ""
-	@echo "$(BLUE)Services:$(NC)"
-	@echo "  API Gateway:     http://localhost:8080"
-	@echo "  Health:          http://localhost:8080/health"
-	@echo "  Swagger UI:      http://localhost:8080/swagger-ui.html"
+down: ## Stop local development environment
+	@./scripts/dev.sh down
 
-dev-tools: ## Start development environment with management tools
-	@echo "$(BLUE)Starting management tools...$(NC)"
-	docker-compose --profile tools up -d
-	@echo "$(GREEN)Management tools started!$(NC)"
-	@echo ""
-	@echo "$(BLUE)Tools:$(NC)"
-	@echo "  PgAdmin:         http://localhost:5050"
-	@echo "  Redis Commander: http://localhost:8081"
+restart: ## Restart development environment
+	@./scripts/dev.sh restart
 
-dev-all: ## Start everything (core + services + tools)
-	@echo "$(BLUE)Starting all services and tools...$(NC)"
-	docker-compose --profile services --profile tools up -d
-	@echo "$(GREEN)Everything started!$(NC)"
+logs: ## Show logs from development environment
+	@./scripts/dev.sh logs
 
-dev-down: ## Stop local development environment
-	@echo "$(BLUE)Stopping development environment...$(NC)"
-	@if [ ! -f docker-compose.yml ]; then \
-		echo "$(YELLOW)Warning: docker-compose.yml not found.$(NC)"; \
-		exit 0; \
-	fi
-	docker-compose down
-	@echo "$(GREEN)Development environment stopped!$(NC)"
+status: ## Show status of all services
+	@./scripts/dev.sh status
 
-dev-restart: ## Restart development environment
-	@echo "$(BLUE)Restarting development environment...$(NC)"
-	$(MAKE) dev-down
-	$(MAKE) dev-up
+shell: ## Open shell in service (usage: make shell SERVICE=api-gateway)
+	@./scripts/dev.sh shell $(SERVICE)
 
-dev-logs: ## Show logs from development environment
-	@if [ ! -f docker-compose.yml ]; then \
-		echo "$(YELLOW)Warning: docker-compose.yml not found.$(NC)"; \
-		exit 1; \
-	fi
-	docker-compose logs -f
+# Database commands
+db-migrate: ## Run database migrations
+	@./scripts/dev.sh db migrate
 
-dev-status: ## Show status of all services
-	@if [ ! -f docker-compose.yml ]; then \
-		echo "$(YELLOW)Warning: docker-compose.yml not found.$(NC)"; \
-		exit 1; \
-	fi
-	docker-compose ps
+db-seed: ## Seed test data
+	@./scripts/dev.sh db seed
 
-dev-clean: ## Stop and remove all data (WARNING: deletes volumes)
-	@echo "$(YELLOW)WARNING: This will delete all Docker volumes and data!$(NC)"
-	@read -p "Are you sure? (yes/no): " confirm && [ "$$confirm" = "yes" ]
-	docker-compose down -v
-	@echo "$(GREEN)All data cleaned!$(NC)"
+db-reset: ## Reset database (destructive!)
+	@./scripts/dev.sh db reset
 
 db-shell: ## Open PostgreSQL shell
-	@docker exec -it aswa-postgres psql -U aswa -d aswa
+	@./scripts/dev.sh db shell
 
 redis-shell: ## Open Redis CLI
-	@docker exec -it aswa-redis redis-cli -a aswa_dev_password
+	@./scripts/dev.sh shell redis
 
-db-migrate: ## Run database migrations
-	@echo "$(BLUE)Running database migrations...$(NC)"
-	@if [ -f scripts/db-migrate.sh ]; then \
-		./scripts/db-migrate.sh migrate dev; \
-	else \
-		echo "$(YELLOW)Migration script not found.$(NC)"; \
-	fi
+# API client generation
+api-client: ## Generate API client from OpenAPI spec
+	@./scripts/generate-api-client.sh
+
+# Convenience aliases
+dev-up: up
+dev-down: down
+dev-logs: logs
+dev-status: status
+dev-restart: restart
+dev-clean: ## Stop and remove all data (WARNING: deletes volumes)
+	@./scripts/dev.sh clean
 
 check-deps: ## Check for outdated dependencies
 	@echo "$(BLUE)Checking for outdated dependencies...$(NC)"

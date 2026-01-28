@@ -1,0 +1,75 @@
+# Loki Helm values for log aggregation
+loki:
+  auth_enabled: false
+
+  commonConfig:
+    replication_factor: 1
+
+  storage:
+    bucketNames:
+      chunks: aswa-loki-chunks
+      ruler: aswa-loki-ruler
+      admin: aswa-loki-admin
+    type: s3
+    s3:
+      region: us-east-1
+      endpoint: null  # Use AWS default
+
+  schemaConfig:
+    configs:
+      - from: 2024-01-01
+        store: boltdb-shipper
+        object_store: s3
+        schema: v12
+        index:
+          prefix: loki_index_
+          period: 24h
+
+  limits_config:
+    enforce_metric_name: false
+    reject_old_samples: true
+    reject_old_samples_max_age: 168h  # 7 days
+    max_cache_freshness_per_query: 10m
+    split_queries_by_interval: 15m
+
+  rulerConfig:
+    storage:
+      type: local
+      local:
+        directory: /var/loki/rules
+    rule_path: /tmp/rules
+    alertmanager_url: http://alertmanager:9093
+    ring:
+      kvstore:
+        store: inmemory
+    enable_api: true
+
+write:
+  replicas: 2
+  persistence:
+    size: 10Gi
+    storageClass: aswa-ssd
+
+read:
+  replicas: 2
+  persistence:
+    size: 10Gi
+    storageClass: aswa-ssd
+
+backend:
+  replicas: 1
+  persistence:
+    size: 10Gi
+    storageClass: aswa-ssd
+
+gateway:
+  enabled: true
+  replicas: 2
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+  selfMonitoring:
+    enabled: false
+  lokiCanary:
+    enabled: false

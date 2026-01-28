@@ -138,20 +138,20 @@ Infrastructure setup for Kubernetes deployment, CI/CD, and observability.
 - [x] `prompts/phase7/task-7.2.3-kubernetes-persistent-volumes.md` - Storage configuration
 
 ### CI/CD Pipeline
-- [ ] `prompts/phase7/task-7.3.1-cicd-github-actions.md` - GitHub Actions workflows
-- [ ] `prompts/phase7/task-7.3.2-cicd-testing-pipeline.md` - E2E testing pipeline
-- [ ] `prompts/phase7/task-7.3.3-cicd-deployment-pipeline.md` - Deployment automation
+- [x] `prompts/phase7/task-7.3.1-cicd-github-actions.md` - GitHub Actions workflows
+- [x] `prompts/phase7/task-7.3.2-cicd-testing-pipeline.md` - E2E testing pipeline
+- [x] `prompts/phase7/task-7.3.3-cicd-deployment-pipeline.md` - Deployment automation
 
 ### Observability
-- [ ] `prompts/phase7/task-7.4.1-observability-prometheus.md` - Prometheus metrics
-- [ ] `prompts/phase7/task-7.4.2-observability-logging.md` - Structured logging (Loki)
-- [ ] `prompts/phase7/task-7.4.3-observability-tracing.md` - Distributed tracing (Jaeger)
-- [ ] `prompts/phase7/task-7.4.4-observability-dashboards.md` - Grafana dashboards
+- [x] `prompts/phase7/task-7.4.1-observability-prometheus.md` - Prometheus metrics
+- [x] `prompts/phase7/task-7.4.2-observability-logging.md` - Structured logging (Loki)
+- [x] `prompts/phase7/task-7.4.3-observability-tracing.md` - Distributed tracing (Jaeger)
+- [x] `prompts/phase7/task-7.4.4-observability-dashboards.md` - Grafana dashboards
 
 ### Local Development
-- [ ] `prompts/phase7/task-7.5.1-local-dev-docker-compose.md` - Docker Compose setup
-- [ ] `prompts/phase7/task-7.5.2-local-dev-scripts.md` - Development scripts
-- [ ] `prompts/phase7/task-7.5.3-local-dev-testing.md` - Test environment
+- [x] `prompts/phase7/task-7.5.1-local-dev-docker-compose.md` - Docker Compose setup
+- [x] `prompts/phase7/task-7.5.2-local-dev-scripts.md` - Development scripts
+- [x] `prompts/phase7/task-7.5.3-local-dev-testing.md` - Test environment
 
 **Phase 7 Verification:**
 ```bash

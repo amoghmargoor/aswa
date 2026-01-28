@@ -1,0 +1,50 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: aswa-log-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: aswa
+spec:
+  groups:
+    - name: aswa.log.alerts
+      rules:
+        - alert: ASWAHighErrorLogRate
+          expr: |
+            sum(rate({job="aswa", level="ERROR"}[5m])) > 10
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High error log rate detected"
+            description: "More than 10 error logs per second in the last 5 minutes"
+
+        - alert: ASWAAuthenticationFailures
+          expr: |
+            sum(rate({job="aswa", message=~".*authentication failed.*"}[5m])) > 5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High authentication failure rate"
+            description: "More than 5 authentication failures per second"
+
+        - alert: ASWADatabaseConnectionErrors
+          expr: |
+            sum(rate({job="aswa", message=~".*database connection.*error.*"}[5m])) > 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Database connection errors detected"
+            description: "Database connection errors occurring"
+
+        - alert: ASWAExternalAPIErrors
+          expr: |
+            sum(rate({job="aswa", message=~".*(openai|anthropic).*error.*"}[5m])) > 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "External API errors detected"
+            description: "Errors communicating with external LLM APIs"
