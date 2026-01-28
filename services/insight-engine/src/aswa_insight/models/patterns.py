@@ -1,6 +1,6 @@
 """Pattern extraction models."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import UUID
 
@@ -74,4 +74,4 @@ class PatternExtractionResult(BaseModel):
 
     patterns: list[ExtractedPattern] = Field(default_factory=list)
     document_id: UUID | None = None
-    extraction_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    extraction_timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))

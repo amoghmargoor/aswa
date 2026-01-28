@@ -1,6 +1,6 @@
 """Unified insight model for storage."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -40,8 +40,8 @@ class Insight(BaseModel):
     )
     sources: list[SourceReference] = Field(default_factory=list)
     related_entity_ids: list[UUID] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     user_validated: bool = False
     user_feedback: str | None = None
 
@@ -50,6 +50,9 @@ class Insight(BaseModel):
         cls, entity: ExtractedEntity, tenant_id: UUID, document_id: UUID
     ) -> "Insight":
         """Create insight from extracted entity."""
+        # Get enum value properly (it might already be a string due to use_enum_values)
+        entity_type_val = entity.entity_type if isinstance(entity.entity_type, str) else entity.entity_type.value
+
         return cls(
             tenant_id=tenant_id,
             document_id=document_id,
@@ -57,10 +60,10 @@ class Insight(BaseModel):
             title=entity.name,
             description=entity.description,
             confidence=entity.confidence,
-            category=entity.entity_type.value,
+            category=entity_type_val,
             raw_data={
                 "name": entity.name,
-                "entity_type": entity.entity_type.value,
+                "entity_type": entity_type_val,
                 "aliases": entity.aliases,
                 "attributes": entity.attributes,
             },
@@ -72,6 +75,14 @@ class Insight(BaseModel):
         cls, risk: ExtractedRisk, tenant_id: UUID, document_id: UUID
     ) -> "Insight":
         """Create insight from extracted risk."""
+        # Get enum values properly (they might already be strings due to use_enum_values)
+        category_val = risk.category if isinstance(risk.category, str) else risk.category.value
+        severity_val = risk.severity if isinstance(risk.severity, str) else risk.severity.value
+        likelihood_val = risk.likelihood if isinstance(risk.likelihood, str) else risk.likelihood.value
+        time_horizon_val = None
+        if risk.time_horizon:
+            time_horizon_val = risk.time_horizon if isinstance(risk.time_horizon, str) else risk.time_horizon.value
+
         return cls(
             tenant_id=tenant_id,
             document_id=document_id,
@@ -80,11 +91,11 @@ class Insight(BaseModel):
             description=risk.description,
             confidence=risk.confidence,
             severity=risk.severity,
-            category=risk.category.value,
+            category=category_val,
             raw_data={
-                "severity": risk.severity.value,
-                "likelihood": risk.likelihood.value,
-                "time_horizon": risk.time_horizon.value if risk.time_horizon else None,
+                "severity": severity_val,
+                "likelihood": likelihood_val,
+                "time_horizon": time_horizon_val,
                 "impact_description": risk.impact_description,
                 "affected_areas": risk.affected_areas,
                 "related_entities": risk.related_entities,
@@ -99,6 +110,14 @@ class Insight(BaseModel):
         cls, opportunity: ExtractedOpportunity, tenant_id: UUID, document_id: UUID
     ) -> "Insight":
         """Create insight from extracted opportunity."""
+        # Get enum values properly (they might already be strings due to use_enum_values)
+        category_val = opportunity.category if isinstance(opportunity.category, str) else opportunity.category.value
+        impact_val = opportunity.impact if isinstance(opportunity.impact, str) else opportunity.impact.value
+        effort_val = opportunity.effort if isinstance(opportunity.effort, str) else opportunity.effort.value
+        time_to_value_val = None
+        if opportunity.time_to_value:
+            time_to_value_val = opportunity.time_to_value if isinstance(opportunity.time_to_value, str) else opportunity.time_to_value.value
+
         return cls(
             tenant_id=tenant_id,
             document_id=document_id,
@@ -107,13 +126,11 @@ class Insight(BaseModel):
             description=opportunity.description,
             confidence=opportunity.confidence,
             impact=opportunity.impact,
-            category=opportunity.category.value,
+            category=category_val,
             raw_data={
-                "impact": opportunity.impact.value,
-                "effort": opportunity.effort.value,
-                "time_to_value": (
-                    opportunity.time_to_value.value if opportunity.time_to_value else None
-                ),
+                "impact": impact_val,
+                "effort": effort_val,
+                "time_to_value": time_to_value_val,
                 "potential_value": opportunity.potential_value,
                 "prerequisites": opportunity.prerequisites,
                 "risks": opportunity.risks,
@@ -129,6 +146,15 @@ class Insight(BaseModel):
         cls, pattern: ExtractedPattern, tenant_id: UUID, document_id: UUID
     ) -> "Insight":
         """Create insight from extracted pattern."""
+        # Get enum values properly (they might already be strings due to use_enum_values)
+        pattern_type_val = pattern.pattern_type if isinstance(pattern.pattern_type, str) else pattern.pattern_type.value
+        frequency_val = None
+        if pattern.frequency:
+            frequency_val = pattern.frequency if isinstance(pattern.frequency, str) else pattern.frequency.value
+        trend_direction_val = None
+        if pattern.trend_direction:
+            trend_direction_val = pattern.trend_direction if isinstance(pattern.trend_direction, str) else pattern.trend_direction.value
+
         return cls(
             tenant_id=tenant_id,
             document_id=document_id,
@@ -136,13 +162,11 @@ class Insight(BaseModel):
             title=pattern.title,
             description=pattern.description,
             confidence=pattern.confidence,
-            category=pattern.pattern_type.value,
+            category=pattern_type_val,
             raw_data={
-                "pattern_type": pattern.pattern_type.value,
-                "frequency": pattern.frequency.value if pattern.frequency else None,
-                "trend_direction": (
-                    pattern.trend_direction.value if pattern.trend_direction else None
-                ),
+                "pattern_type": pattern_type_val,
+                "frequency": frequency_val,
+                "trend_direction": trend_direction_val,
                 "magnitude": pattern.magnitude,
                 "time_period": pattern.time_period,
                 "data_points": [d.model_dump() for d in pattern.data_points],

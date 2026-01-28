@@ -165,16 +165,21 @@ class TestInsight:
 
         insight = Insight.from_entity(entity, tenant_id, document_id)
 
-        # Serialize to dict
+        # Serialize to dict (UUIDs are kept as UUID objects by default)
         data = insight.model_dump()
 
         assert "id" in data
-        assert data["tenant_id"] == str(tenant_id)
-        assert data["document_id"] == str(document_id)
+        assert data["tenant_id"] == tenant_id
+        assert data["document_id"] == document_id
         assert data["insight_type"] == "entity"
         assert data["title"] == "Microsoft"
         assert data["confidence"] == 0.95
         assert "raw_data" in data
+
+        # Test JSON mode serialization (converts UUIDs to strings)
+        json_data = insight.model_dump(mode="json")
+        assert json_data["tenant_id"] == str(tenant_id)
+        assert json_data["document_id"] == str(document_id)
 
     def test_insight_with_sources(self):
         """Test insight with source references."""
@@ -270,4 +275,6 @@ class TestInsight:
 
         assert insight.created_at is not None
         assert insight.updated_at is not None
-        assert insight.created_at == insight.updated_at
+        # Timestamps should be very close (within a second)
+        time_diff = abs((insight.updated_at - insight.created_at).total_seconds())
+        assert time_diff < 1.0

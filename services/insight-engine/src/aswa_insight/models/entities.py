@@ -1,6 +1,6 @@
 """Entity extraction models."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Annotated
 from uuid import UUID
@@ -69,4 +69,4 @@ class EntityExtractionResult(BaseModel):
     entities: list[ExtractedEntity] = Field(default_factory=list)
     relationships: list[EntityRelationship] = Field(default_factory=list)
     document_id: UUID | None = None
-    extraction_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    extraction_timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))

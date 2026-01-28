@@ -1,6 +1,6 @@
 """Risk extraction models."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Annotated, Literal
 from uuid import UUID
@@ -88,4 +88,4 @@ class RiskExtractionResult(BaseModel):
     risks: list[ExtractedRisk] = Field(default_factory=list)
     overall_risk_level: Severity | None = None
     document_id: UUID | None = None
-    extraction_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    extraction_timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
