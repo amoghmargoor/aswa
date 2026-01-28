@@ -1,0 +1,126 @@
+# CronJob for creating volume snapshots
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: volume-backup
+  namespace: aswa-prod
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: aswa
+            app.kubernetes.io/component: backup
+        spec:
+          serviceAccountName: aswa-backup
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: bitnami/kubectl:latest
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  set -e
+
+                  DATE=$(date +%Y%m%d-%H%M%S)
+
+                  # Create PostgreSQL snapshot
+                  cat <<EOF | kubectl apply -f -
+                  apiVersion: snapshot.storage.k8s.io/v1
+                  kind: VolumeSnapshot
+                  metadata:
+                    name: postgresql-snapshot-${DATE}
+                    namespace: aswa-prod
+                    labels:
+                      app.kubernetes.io/name: aswa
+                      app.kubernetes.io/component: postgresql
+                      backup-date: "${DATE}"
+                  spec:
+                    volumeSnapshotClassName: aswa-snapshot
+                    source:
+                      persistentVolumeClaimName: postgresql-data
+                  EOF
+
+                  echo "PostgreSQL snapshot created: postgresql-snapshot-${DATE}"
+
+                  # Create Elasticsearch snapshots
+                  for i in 0 1; do
+                    cat <<EOF | kubectl apply -f -
+                  apiVersion: snapshot.storage.k8s.io/v1
+                  kind: VolumeSnapshot
+                  metadata:
+                    name: elasticsearch-data-${i}-snapshot-${DATE}
+                    namespace: aswa-prod
+                    labels:
+                      app.kubernetes.io/name: aswa
+                      app.kubernetes.io/component: elasticsearch
+                      backup-date: "${DATE}"
+                  spec:
+                    volumeSnapshotClassName: aswa-snapshot
+                    source:
+                      persistentVolumeClaimName: elasticsearch-data-${i}
+                  EOF
+                    echo "Elasticsearch snapshot created: elasticsearch-data-${i}-snapshot-${DATE}"
+                  done
+
+                  # Cleanup old snapshots (keep last 7 days)
+                  CUTOFF_DATE=$(date -d '7 days ago' +%Y%m%d)
+
+                  kubectl get volumesnapshots -n aswa-prod -o json | \
+                    jq -r ".items[] | select(.metadata.labels[\"backup-date\"] != null) | select(.metadata.labels[\"backup-date\"] < \"${CUTOFF_DATE}\") | .metadata.name" | \
+                    xargs -r -I {} kubectl delete volumesnapshot {} -n aswa-prod
+
+                  echo "Backup job completed successfully"
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi
+---
+# Service account for backup job
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aswa-backup
+  namespace: aswa-prod
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/component: backup
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: aswa-backup-role
+  namespace: aswa-prod
+rules:
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["volumesnapshots"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aswa-backup-binding
+  namespace: aswa-prod
+subjects:
+  - kind: ServiceAccount
+    name: aswa-backup
+    namespace: aswa-prod
+roleRef:
+  kind: Role
+  name: aswa-backup-role
+  apiGroup: rbac.authorization.k8s.io

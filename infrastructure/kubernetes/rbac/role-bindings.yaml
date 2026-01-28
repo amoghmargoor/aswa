@@ -1,0 +1,74 @@
+# API Gateway role binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aswa-api-gateway-binding
+  namespace: aswa-prod
+subjects:
+  - kind: ServiceAccount
+    name: aswa-api-gateway
+    namespace: aswa-prod
+roleRef:
+  kind: Role
+  name: aswa-service
+  apiGroup: rbac.authorization.k8s.io
+---
+# Ingestion role binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aswa-ingestion-binding
+  namespace: aswa-prod
+subjects:
+  - kind: ServiceAccount
+    name: aswa-ingestion
+    namespace: aswa-prod
+roleRef:
+  kind: Role
+  name: aswa-ingestion-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Query service role binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aswa-query-binding
+  namespace: aswa-prod
+subjects:
+  - kind: ServiceAccount
+    name: aswa-query
+    namespace: aswa-prod
+roleRef:
+  kind: Role
+  name: aswa-service
+  apiGroup: rbac.authorization.k8s.io
+---
+# Insight service role binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aswa-insight-binding
+  namespace: aswa-prod
+subjects:
+  - kind: ServiceAccount
+    name: aswa-insight
+    namespace: aswa-prod
+roleRef:
+  kind: Role
+  name: aswa-service
+  apiGroup: rbac.authorization.k8s.io
+---
+# Batch jobs role binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aswa-batch-binding
+  namespace: aswa-prod
+subjects:
+  - kind: ServiceAccount
+    name: aswa-batch-jobs
+    namespace: aswa-prod
+roleRef:
+  kind: Role
+  name: aswa-batch-role
+  apiGroup: rbac.authorization.k8s.io

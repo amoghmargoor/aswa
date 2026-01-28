@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build Release Images
+    uses: ./.github/workflows/build-images.yaml
+    with:
+      environment: production
+      tag: ${{ github.ref_name }}
+    secrets: inherit
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            echo "changelog=Initial release" >> $GITHUB_OUTPUT
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD)
+            echo "changelog<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGELOG" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## Changes
+
+            ${{ steps.changelog.outputs.changelog }}
+
+            ## Docker Images
+
+            - `ghcr.io/${{ github.repository_owner }}/aswa/api-gateway:${{ github.ref_name }}`
+            - `ghcr.io/${{ github.repository_owner }}/aswa/ingestion-service:${{ github.ref_name }}`
+            - `ghcr.io/${{ github.repository_owner }}/aswa/query-service:${{ github.ref_name }}`
+            - `ghcr.io/${{ github.repository_owner }}/aswa/insight-service:${{ github.ref_name }}`
+            - `ghcr.io/${{ github.repository_owner }}/aswa/web-dashboard:${{ github.ref_name }}`
+
+            ## Deployment
+
+            To deploy this release:
+            ```bash
+            gh workflow run deploy-production.yaml -f version=${{ github.ref_name }}
+            ```
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') }}

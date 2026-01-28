@@ -1,0 +1,53 @@
+# Elasticsearch master node storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: elasticsearch-master-0
+  namespace: aswa-prod
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/component: elasticsearch
+    elasticsearch.node.role: master
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: aswa-ssd
+  resources:
+    requests:
+      storage: 20Gi
+---
+# Elasticsearch data node storage (template for StatefulSet)
+# These PVCs are created by the StatefulSet
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: elasticsearch-data-0
+  namespace: aswa-prod
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/component: elasticsearch
+    elasticsearch.node.role: data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: aswa-ssd-fast
+  resources:
+    requests:
+      storage: 500Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: elasticsearch-data-1
+  namespace: aswa-prod
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/component: elasticsearch
+    elasticsearch.node.role: data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: aswa-ssd-fast
+  resources:
+    requests:
+      storage: 500Gi

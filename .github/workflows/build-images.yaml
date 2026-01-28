@@ -1,0 +1,131 @@
+name: Build Images
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      tag:
+        required: true
+        type: string
+    outputs:
+      images:
+        description: "Built image tags"
+        value: ${{ jobs.build.outputs.images }}
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/aswa
+
+jobs:
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    outputs:
+      images: ${{ steps.output.outputs.images }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+
+      - name: Build and push API Gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/api-gateway/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/api-gateway:${{ inputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/api-gateway:${{ steps.meta.outputs.sha_short }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ steps.meta.outputs.date }}
+            VERSION=${{ inputs.tag }}
+            COMMIT=${{ github.sha }}
+
+      - name: Build and push Ingestion Service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/ingestion-service/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/ingestion-service:${{ inputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/ingestion-service:${{ steps.meta.outputs.sha_short }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Query Service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/query-service/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/query-service:${{ inputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/query-service:${{ steps.meta.outputs.sha_short }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Insight Service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/insight-service/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/insight-service:${{ inputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/insight-service:${{ steps.meta.outputs.sha_short }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Web Dashboard
+        uses: docker/build-push-action@v5
+        with:
+          context: services/web-dashboard
+          file: services/web-dashboard/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/web-dashboard:${{ inputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/web-dashboard:${{ steps.meta.outputs.sha_short }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output image tags
+        id: output
+        run: |
+          cat >> $GITHUB_OUTPUT << EOF
+          images<<IMAGES_EOF
+          {
+            "api-gateway": "${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/api-gateway:${{ inputs.tag }}",
+            "ingestion-service": "${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/ingestion-service:${{ inputs.tag }}",
+            "query-service": "${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/query-service:${{ inputs.tag }}",
+            "insight-service": "${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/insight-service:${{ inputs.tag }}",
+            "web-dashboard": "${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/web-dashboard:${{ inputs.tag }}"
+          }
+          IMAGES_EOF
+          EOF

@@ -1,0 +1,57 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: aswa-recording-rules
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: aswa
+spec:
+  groups:
+    - name: aswa.aggregations
+      interval: 30s
+      rules:
+        # Request rate by service
+        - record: aswa:http_requests_rate5m
+          expr: sum(rate(http_requests_total[5m])) by (job, namespace)
+
+        # Error rate by service
+        - record: aswa:http_error_rate5m
+          expr: |
+            sum(rate(http_requests_total{status="error"}[5m])) by (job, namespace)
+            /
+            sum(rate(http_requests_total[5m])) by (job, namespace)
+
+        # P50 latency
+        - record: aswa:http_latency_p50
+          expr: histogram_quantile(0.5, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))
+
+        # P95 latency
+        - record: aswa:http_latency_p95
+          expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))
+
+        # P99 latency
+        - record: aswa:http_latency_p99
+          expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))
+
+        # Documents processed per hour
+        - record: aswa:documents_processed_1h
+          expr: sum(increase(documents_processed_total[1h])) by (tenant_id)
+
+        # Insights generated per hour
+        - record: aswa:insights_generated_1h
+          expr: sum(increase(insights_generated_total[1h])) by (tenant_id, insight_type)
+
+        # Queries per hour
+        - record: aswa:queries_1h
+          expr: sum(increase(queries_total[1h])) by (tenant_id)
+
+        # Token usage per hour
+        - record: aswa:tokens_used_1h
+          expr: sum(increase(query_tokens_used_total[1h])) by (tenant_id, model)
+
+        # Cache hit rate
+        - record: aswa:cache_hit_rate
+          expr: |
+            sum(rate(cache_hits_total[5m])) by (cache)
+            /
+            (sum(rate(cache_hits_total[5m])) by (cache) + sum(rate(cache_misses_total[5m])) by (cache))

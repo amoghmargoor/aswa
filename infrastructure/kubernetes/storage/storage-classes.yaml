@@ -1,0 +1,85 @@
+# Standard SSD storage class
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: aswa-ssd
+  labels:
+    app.kubernetes.io/name: aswa
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  iops: "3000"
+  throughput: "125"
+  encrypted: "true"
+  kmsKeyId: alias/aswa-ebs-key
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+---
+# High-performance SSD storage class
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: aswa-ssd-fast
+  labels:
+    app.kubernetes.io/name: aswa
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  iops: "16000"
+  throughput: "1000"
+  encrypted: "true"
+  kmsKeyId: alias/aswa-ebs-key
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+---
+# Provisioned IOPS storage class for databases
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: aswa-ssd-io1
+  labels:
+    app.kubernetes.io/name: aswa
+provisioner: ebs.csi.aws.com
+parameters:
+  type: io2
+  iops: "32000"
+  encrypted: "true"
+  kmsKeyId: alias/aswa-ebs-key
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+---
+# Standard storage class for backups
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: aswa-standard
+  labels:
+    app.kubernetes.io/name: aswa
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  encrypted: "true"
+  kmsKeyId: alias/aswa-ebs-key
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+---
+# EFS storage class for shared storage
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: aswa-efs
+  labels:
+    app.kubernetes.io/name: aswa
+provisioner: efs.csi.aws.com
+parameters:
+  provisioningMode: efs-ap
+  fileSystemId: fs-xxxxxxxxx  # Replace with actual EFS ID
+  directoryPerms: "700"
+  uid: "1000"
+  gid: "1000"
+reclaimPolicy: Retain
+volumeBindingMode: Immediate

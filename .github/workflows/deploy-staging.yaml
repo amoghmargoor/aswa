@@ -1,0 +1,157 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+concurrency:
+  group: staging-deployment
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Images
+    uses: ./.github/workflows/build-images.yaml
+    with:
+      environment: staging
+      tag: staging-${{ github.sha }}
+    secrets: inherit
+
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: staging
+      url: https://app.staging.aswa.io
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_STAGING }}
+          aws-region: us-east-1
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig --name aswa-staging --region us-east-1
+
+      - name: Run database migrations
+        run: |
+          kubectl run migration-${{ github.run_id }} \
+            --namespace aswa-staging \
+            --image=${{ needs.build.outputs.images.api-gateway }} \
+            --restart=Never \
+            --env="DATABASE_URL=${{ secrets.DATABASE_URL }}" \
+            --command -- python -m alembic upgrade head
+
+          kubectl wait --for=condition=complete \
+            --timeout=300s \
+            job/migration-${{ github.run_id }} \
+            -n aswa-staging
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install aswa infrastructure/helm/charts/aswa \
+            --namespace aswa-staging \
+            --create-namespace \
+            --values infrastructure/helm/charts/aswa/values-staging.yaml \
+            --set image.tag=staging-${{ github.sha }} \
+            --set apiGateway.image.tag=staging-${{ github.sha }} \
+            --set ingestionService.image.tag=staging-${{ github.sha }} \
+            --set queryService.image.tag=staging-${{ github.sha }} \
+            --set insightService.image.tag=staging-${{ github.sha }} \
+            --set webDashboard.image.tag=staging-${{ github.sha }} \
+            --wait \
+            --timeout 10m
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/aswa-api-gateway -n aswa-staging --timeout=300s
+          kubectl rollout status deployment/aswa-ingestion -n aswa-staging --timeout=300s
+          kubectl rollout status deployment/aswa-query -n aswa-staging --timeout=300s
+          kubectl rollout status deployment/aswa-insight -n aswa-staging --timeout=300s
+          kubectl rollout status deployment/aswa-web -n aswa-staging --timeout=300s
+
+      - name: Run smoke tests
+        run: |
+          # Wait for services to be ready
+          sleep 30
+
+          # Test health endpoints
+          API_URL="https://api.staging.aswa.io"
+
+          response=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/health")
+          if [ "$response" != "200" ]; then
+            echo "Health check failed with status $response"
+            exit 1
+          fi
+
+          echo "Smoke tests passed"
+
+      - name: Notify on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_DEPLOYMENTS }}
+          payload: |
+            {
+              "text": "Staging deployment failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Staging Deployment Failed*\n\nWorkflow: ${{ github.workflow }}\nCommit: ${{ github.sha }}\nActor: ${{ github.actor }}\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+  e2e-tests:
+    name: E2E Tests
+    needs: deploy
+    uses: ./.github/workflows/e2e-tests.yaml
+    with:
+      environment: staging
+    secrets: inherit
+
+  notify:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: [deploy, e2e-tests]
+    if: success()
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_DEPLOYMENTS }}
+          payload: |
+            {
+              "text": "Staging deployment successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Staging Deployment Successful*\n\nVersion: staging-${{ github.sha }}\nActor: ${{ github.actor }}\n\n<https://app.staging.aswa.io|Open Staging> | <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

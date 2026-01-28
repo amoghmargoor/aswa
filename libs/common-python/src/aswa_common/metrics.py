@@ -5,9 +5,160 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any, TypeVar
 
-from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
+from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram, Info
+import structlog
+
+logger = structlog.get_logger()
 
 T = TypeVar("T")
+
+
+# HTTP Request Metrics
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status", "tenant_id"],
+)
+
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint", "tenant_id"],
+    buckets=[0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+)
+
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently in progress",
+    ["method", "endpoint"],
+)
+
+
+# Document Processing Metrics
+documents_processed_total = Counter(
+    "documents_processed_total",
+    "Total documents processed",
+    ["tenant_id", "document_type", "status"],
+)
+
+document_processing_duration_seconds = Histogram(
+    "document_processing_duration_seconds",
+    "Document processing duration in seconds",
+    ["tenant_id", "document_type"],
+    buckets=[1.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0, 600.0],
+)
+
+document_size_bytes = Histogram(
+    "document_size_bytes",
+    "Document size in bytes",
+    ["tenant_id", "document_type"],
+    buckets=[1024, 10240, 102400, 1048576, 10485760, 104857600],
+)
+
+documents_queued = Gauge(
+    "documents_queued",
+    "Documents currently queued for processing",
+    ["tenant_id"],
+)
+
+
+# Insight Metrics
+insights_generated_total = Counter(
+    "insights_generated_total",
+    "Total insights generated",
+    ["tenant_id", "insight_type", "severity"],
+)
+
+insight_confidence_score = Histogram(
+    "insight_confidence_score",
+    "Insight confidence score distribution",
+    ["tenant_id", "insight_type"],
+    buckets=[0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99],
+)
+
+
+# Query Metrics
+queries_total = Counter(
+    "queries_total",
+    "Total queries processed",
+    ["tenant_id", "query_type", "status"],
+)
+
+query_duration_seconds = Histogram(
+    "query_duration_seconds",
+    "Query processing duration in seconds",
+    ["tenant_id", "query_type"],
+    buckets=[0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0],
+)
+
+query_tokens_used = Counter(
+    "query_tokens_used_total",
+    "Total LLM tokens used for queries",
+    ["tenant_id", "model"],
+)
+
+
+# Vector Store Metrics
+vector_search_total = Counter(
+    "vector_search_total",
+    "Total vector searches performed",
+    ["tenant_id", "status"],
+)
+
+vector_search_duration_seconds = Histogram(
+    "vector_search_duration_seconds",
+    "Vector search duration in seconds",
+    ["tenant_id"],
+    buckets=[0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0],
+)
+
+vector_store_documents = Gauge(
+    "vector_store_documents",
+    "Number of documents in vector store",
+    ["tenant_id"],
+)
+
+
+# Database Metrics
+db_connections_total = Gauge(
+    "db_connections_total",
+    "Database connection pool size",
+    ["pool"],
+)
+
+db_connections_in_use = Gauge(
+    "db_connections_in_use",
+    "Database connections currently in use",
+    ["pool"],
+)
+
+db_query_duration_seconds = Histogram(
+    "db_query_duration_seconds",
+    "Database query duration in seconds",
+    ["operation", "table"],
+    buckets=[0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0],
+)
+
+
+# Cache Metrics
+cache_hits_total = Counter(
+    "cache_hits_total",
+    "Total cache hits",
+    ["cache", "key_type"],
+)
+
+cache_misses_total = Counter(
+    "cache_misses_total",
+    "Total cache misses",
+    ["cache", "key_type"],
+)
+
+
+# Service Info
+service_info = Info(
+    "aswa_service",
+    "ASWA service information",
+)
 
 
 class MetricsRegistry:
@@ -140,3 +291,131 @@ def timed(
         return wrapper
 
     return decorator
+
+
+def track_request_metrics(
+    method: str,
+    endpoint: str,
+    tenant_id: str = "unknown",
+) -> Callable:
+    """Decorator to track HTTP request metrics.
+
+    Args:
+        method: HTTP method
+        endpoint: Request endpoint
+        tenant_id: Tenant identifier
+
+    Returns:
+        Decorated function
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(*args, **kwargs) -> Any:
+            http_requests_in_progress.labels(method=method, endpoint=endpoint).inc()
+            start_time = time.time()
+
+            try:
+                result = await func(*args, **kwargs)
+                status = "success"
+                return result
+            except Exception:
+                status = "error"
+                raise
+            finally:
+                duration = time.time() - start_time
+                http_requests_in_progress.labels(method=method, endpoint=endpoint).dec()
+                http_request_duration_seconds.labels(
+                    method=method,
+                    endpoint=endpoint,
+                    tenant_id=tenant_id,
+                ).observe(duration)
+                http_requests_total.labels(
+                    method=method,
+                    endpoint=endpoint,
+                    status=status,
+                    tenant_id=tenant_id,
+                ).inc()
+
+        return wrapper
+    return decorator
+
+
+def track_processing_metrics(
+    tenant_id: str,
+    document_type: str,
+) -> Callable:
+    """Decorator to track document processing metrics.
+
+    Args:
+        tenant_id: Tenant identifier
+        document_type: Type of document
+
+    Returns:
+        Decorated function
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(*args, **kwargs) -> Any:
+            start_time = time.time()
+
+            try:
+                result = await func(*args, **kwargs)
+                status = "success"
+                return result
+            except Exception:
+                status = "failed"
+                raise
+            finally:
+                duration = time.time() - start_time
+                document_processing_duration_seconds.labels(
+                    tenant_id=tenant_id,
+                    document_type=document_type,
+                ).observe(duration)
+                documents_processed_total.labels(
+                    tenant_id=tenant_id,
+                    document_type=document_type,
+                    status=status,
+                ).inc()
+
+        return wrapper
+    return decorator
+
+
+class MetricsMiddleware:
+    """FastAPI middleware for metrics collection."""
+
+    async def __call__(self, request, call_next):
+        method = request.method
+        endpoint = request.url.path
+
+        # Extract tenant ID from headers or path
+        tenant_id = request.headers.get("X-Tenant-ID", "unknown")
+
+        http_requests_in_progress.labels(method=method, endpoint=endpoint).inc()
+        start_time = time.time()
+
+        try:
+            response = await call_next(request)
+            status_code = response.status_code
+            status = "success" if status_code < 400 else "error"
+        except Exception:
+            status = "error"
+            raise
+        finally:
+            duration = time.time() - start_time
+            http_requests_in_progress.labels(method=method, endpoint=endpoint).dec()
+
+            http_request_duration_seconds.labels(
+                method=method,
+                endpoint=endpoint,
+                tenant_id=tenant_id,
+            ).observe(duration)
+
+            http_requests_total.labels(
+                method=method,
+                endpoint=endpoint,
+                status=status,
+                tenant_id=tenant_id,
+            ).inc()
+
+        return response
