@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data
+  namespace: aswa-prod
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/component: redis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: aswa-ssd
+  resources:
+    requests:
+      storage: 10Gi

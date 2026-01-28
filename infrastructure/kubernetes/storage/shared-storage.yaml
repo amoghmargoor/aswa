@@ -1,0 +1,33 @@
+# Shared storage for document uploads (temporary)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aswa-uploads
+  namespace: aswa-prod
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/component: shared-storage
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: aswa-efs
+  resources:
+    requests:
+      storage: 100Gi
+---
+# Shared cache storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aswa-cache
+  namespace: aswa-prod
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/component: shared-storage
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: aswa-efs
+  resources:
+    requests:
+      storage: 50Gi

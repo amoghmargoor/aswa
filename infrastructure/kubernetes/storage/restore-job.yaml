@@ -1,0 +1,68 @@
+# Job template for restoring from snapshot
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: restore-postgresql
+  namespace: aswa-prod
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/component: restore
+spec:
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      serviceAccountName: aswa-backup
+      restartPolicy: Never
+      containers:
+        - name: restore
+          image: bitnami/kubectl:latest
+          env:
+            - name: SNAPSHOT_NAME
+              value: "postgresql-snapshot-20240115-020000"  # Set to actual snapshot name
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+
+              echo "Creating PVC from snapshot: ${SNAPSHOT_NAME}"
+
+              # Create new PVC from snapshot
+              cat <<EOF | kubectl apply -f -
+              apiVersion: v1
+              kind: PersistentVolumeClaim
+              metadata:
+                name: postgresql-data-restored
+                namespace: aswa-prod
+                labels:
+                  app.kubernetes.io/name: aswa
+                  app.kubernetes.io/component: postgresql
+                  restored-from: "${SNAPSHOT_NAME}"
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                storageClassName: aswa-ssd-io1
+                resources:
+                  requests:
+                    storage: 100Gi
+                dataSource:
+                  name: ${SNAPSHOT_NAME}
+                  kind: VolumeSnapshot
+                  apiGroup: snapshot.storage.k8s.io
+              EOF
+
+              echo "Waiting for PVC to be bound..."
+              kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc/postgresql-data-restored -n aswa-prod --timeout=600s
+
+              echo "Restore PVC created successfully"
+              echo "To complete restore:"
+              echo "1. Scale down PostgreSQL: kubectl scale statefulset postgresql --replicas=0 -n aswa-prod"
+              echo "2. Rename PVCs or update StatefulSet to use restored PVC"
+              echo "3. Scale up PostgreSQL: kubectl scale statefulset postgresql --replicas=1 -n aswa-prod"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi

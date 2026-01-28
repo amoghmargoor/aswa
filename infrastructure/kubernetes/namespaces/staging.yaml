@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aswa-staging
+  labels:
+    app.kubernetes.io/name: aswa
+    app.kubernetes.io/environment: staging
+    istio-injection: enabled
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+  annotations:
+    scheduler.alpha.kubernetes.io/defaultTolerations: |
+      [{"operator": "Exists", "effect": "NoSchedule", "key": "environment", "value": "staging"}]
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: aswa-staging-quota
+  namespace: aswa-staging
+spec:
+  hard:
+    requests.cpu: "32"
+    requests.memory: 64Gi
+    limits.cpu: "64"
+    limits.memory: 128Gi
+    pods: "100"
+    services: "30"
+    secrets: "100"
+    configmaps: "100"
+    persistentvolumeclaims: "50"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: aswa-staging-limits
+  namespace: aswa-staging
+spec:
+  limits:
+    - default:
+        cpu: 500m
+        memory: 512Mi
+      defaultRequest:
+        cpu: 100m
+        memory: 256Mi
+      max:
+        cpu: "4"
+        memory: 8Gi
+      min:
+        cpu: 50m
+        memory: 64Mi
+      type: Container
+    - max:
+        storage: 100Gi
+      min:
+        storage: 1Gi
+      type: PersistentVolumeClaim

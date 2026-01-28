@@ -1,0 +1,116 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingestion-ingress
+  namespace: aswa-prod
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: ingestion
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from API gateway
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: api-gateway
+      ports:
+        - protocol: TCP
+          port: 8001
+    # Allow from batch jobs
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: batch
+      ports:
+        - protocol: TCP
+          port: 8001
+    # Allow Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 9090
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingestion-egress
+  namespace: aswa-prod
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: ingestion
+  policyTypes:
+    - Egress
+  egress:
+    # Allow to PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: postgresql
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow external PostgreSQL (RDS)
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow to Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow external Redis (ElastiCache)
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow to Elasticsearch
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: elasticsearch
+      ports:
+        - protocol: TCP
+          port: 9200
+    # Allow external Elasticsearch (OpenSearch)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 169.254.169.254/32  # Block metadata service
+      ports:
+        - protocol: TCP
+          port: 443
+    # Allow to S3 (via VPC endpoint or NAT)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 169.254.169.254/32
+      ports:
+        - protocol: TCP
+          port: 443
+    # Allow to insight service
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: insight
+      ports:
+        - protocol: TCP
+          port: 8003

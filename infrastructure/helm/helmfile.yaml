@@ -1,0 +1,45 @@
+# Helmfile for ASWA deployment
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
+environments:
+  development:
+    values:
+      - charts/aswa/values-dev.yaml
+  staging:
+    values:
+      - charts/aswa/values-staging.yaml
+  production:
+    values:
+      - charts/aswa/values-prod.yaml
+
+releases:
+  - name: aswa
+    namespace: aswa-{{ .Environment.Name }}
+    chart: ./charts/aswa
+    version: 0.1.0
+    values:
+      - charts/aswa/values.yaml
+    secrets:
+      - secrets/{{ .Environment.Name }}/secrets.yaml
+    set:
+      - name: global.imageRegistry
+        value: ghcr.io
+    hooks:
+      - events:
+          - presync
+        showlogs: true
+        command: kubectl
+        args:
+          - create
+          - namespace
+          - aswa-{{ .Environment.Name }}
+          - --dry-run=client
+          - -o
+          - yaml
+          - "|"
+          - kubectl
+          - apply
+          - -f
+          - "-"

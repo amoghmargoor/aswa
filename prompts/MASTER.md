@@ -111,9 +111,9 @@ Output integrations enable webhooks, Jira integration, and notifications.
 - [x] `prompts/phase6/task-6.2.3-bidirectional-sync.md` - Bidirectional sync with Jira
 
 ### Notifications
-- [ ] `prompts/phase6/task-6.3.1-notification-service.md` - Core notification service
-- [ ] `prompts/phase6/task-6.3.2-email-notifications.md` - Email delivery (SendGrid/SES)
-- [ ] `prompts/phase6/task-6.3.3-push-notifications.md` - Push notifications (FCM/APNs)
+- [x] `prompts/phase6/task-6.3.1-notification-service.md` - Core notification service
+- [x] `prompts/phase6/task-6.3.2-email-notifications.md` - Email delivery (SendGrid/SES)
+- [x] `prompts/phase6/task-6.3.3-push-notifications.md` - Push notifications (FCM/APNs)
 
 **Phase 6 Verification:**
 ```bash
@@ -128,14 +128,14 @@ cd services/notification-service && pytest tests/ -v
 Infrastructure setup for Kubernetes deployment, CI/CD, and observability.
 
 ### Helm Charts
-- [ ] `prompts/phase7/task-7.1.1-helm-base-chart.md` - Base Helm chart structure
-- [ ] `prompts/phase7/task-7.1.2-helm-service-charts.md` - Service-specific charts
-- [ ] `prompts/phase7/task-7.1.3-helm-environment-values.md` - Environment configurations
+- [x] `prompts/phase7/task-7.1.1-helm-base-chart.md` - Base Helm chart structure
+- [x] `prompts/phase7/task-7.1.2-helm-service-charts.md` - Service-specific charts
+- [x] `prompts/phase7/task-7.1.3-helm-environment-values.md` - Environment configurations
 
 ### Kubernetes Resources
-- [ ] `prompts/phase7/task-7.2.1-kubernetes-namespaces-rbac.md` - Namespaces and RBAC
-- [ ] `prompts/phase7/task-7.2.2-kubernetes-network-policies.md` - Network policies
-- [ ] `prompts/phase7/task-7.2.3-kubernetes-persistent-volumes.md` - Storage configuration
+- [x] `prompts/phase7/task-7.2.1-kubernetes-namespaces-rbac.md` - Namespaces and RBAC
+- [x] `prompts/phase7/task-7.2.2-kubernetes-network-policies.md` - Network policies
+- [x] `prompts/phase7/task-7.2.3-kubernetes-persistent-volumes.md` - Storage configuration
 
 ### CI/CD Pipeline
 - [ ] `prompts/phase7/task-7.3.1-cicd-github-actions.md` - GitHub Actions workflows

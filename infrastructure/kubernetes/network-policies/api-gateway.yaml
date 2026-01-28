@@ -1,0 +1,94 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-gateway-ingress
+  namespace: aswa-prod
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: api-gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow from other ASWA services (for health checks)
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: aswa
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 9090
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-gateway-egress
+  namespace: aswa-prod
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: api-gateway
+  policyTypes:
+    - Egress
+  egress:
+    # Allow to ingestion service
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: ingestion
+      ports:
+        - protocol: TCP
+          port: 8001
+    # Allow to query service
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: query
+      ports:
+        - protocol: TCP
+          port: 8002
+    # Allow to insight service
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: insight
+      ports:
+        - protocol: TCP
+          port: 8003
+    # Allow to Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow external Redis (ElastiCache)
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+      ports:
+        - protocol: TCP
+          port: 6379
