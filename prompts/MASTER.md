@@ -168,8 +168,8 @@ Security implementation including authentication, encryption, and compliance.
 
 ### Authentication
 - [x] `prompts/phase8/task-8.1.1-auth-jwt-oauth.md` - JWT tokens and OAuth 2.0
-- [ ] `prompts/phase8/task-8.1.2-auth-session-management.md` - Session management
-- [ ] `prompts/phase8/task-8.1.3-auth-mfa.md` - Multi-factor authentication
+- [x] `prompts/phase8/task-8.1.2-auth-session-management.md` - Session management
+- [x] `prompts/phase8/task-8.1.3-auth-mfa.md` - Multi-factor authentication
 
 ### Data Security
 - [ ] `prompts/phase8/task-8.2.1-data-encryption-at-rest.md` - Encryption at rest (KMS)
