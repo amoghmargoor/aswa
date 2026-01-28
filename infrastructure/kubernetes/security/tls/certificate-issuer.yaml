@@ -1,0 +1,70 @@
+# cert-manager ClusterIssuers for TLS certificates
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: security@aswa.io
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+        selector:
+          dnsZones:
+            - "aswa.io"
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: security@aswa.io
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+---
+# Internal CA for mTLS
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: aswa-internal-ca
+spec:
+  ca:
+    secretName: aswa-internal-ca-keypair
+---
+# Self-signed issuer for bootstrapping internal CA
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+# Create internal CA certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: aswa-internal-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: ASWA Internal CA
+  secretName: aswa-internal-ca-keypair
+  duration: 87600h # 10 years
+  renewBefore: 8760h # 1 year
+  privateKey:
+    algorithm: ECDSA
+    size: 384
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer

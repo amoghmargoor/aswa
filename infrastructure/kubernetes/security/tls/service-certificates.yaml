@@ -1,0 +1,110 @@
+# Service certificates for mTLS
+
+# API Gateway certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: api-gateway-tls
+  namespace: aswa-production
+spec:
+  secretName: api-gateway-tls
+  duration: 720h # 30 days
+  renewBefore: 168h # 7 days
+  subject:
+    organizations:
+      - ASWA
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  usages:
+    - server auth
+    - client auth
+  dnsNames:
+    - api-gateway
+    - api-gateway.aswa-production.svc
+    - api-gateway.aswa-production.svc.cluster.local
+    - api.aswa.io
+  issuerRef:
+    name: aswa-internal-ca
+    kind: ClusterIssuer
+---
+# Ingestion Service certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ingestion-service-tls
+  namespace: aswa-production
+spec:
+  secretName: ingestion-service-tls
+  duration: 720h
+  renewBefore: 168h
+  subject:
+    organizations:
+      - ASWA
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  usages:
+    - server auth
+    - client auth
+  dnsNames:
+    - ingestion-service
+    - ingestion-service.aswa-production.svc
+    - ingestion-service.aswa-production.svc.cluster.local
+  issuerRef:
+    name: aswa-internal-ca
+    kind: ClusterIssuer
+---
+# Query Service certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: query-service-tls
+  namespace: aswa-production
+spec:
+  secretName: query-service-tls
+  duration: 720h
+  renewBefore: 168h
+  subject:
+    organizations:
+      - ASWA
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  usages:
+    - server auth
+    - client auth
+  dnsNames:
+    - query-service
+    - query-service.aswa-production.svc
+    - query-service.aswa-production.svc.cluster.local
+  issuerRef:
+    name: aswa-internal-ca
+    kind: ClusterIssuer
+---
+# Insight Service certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: insight-service-tls
+  namespace: aswa-production
+spec:
+  secretName: insight-service-tls
+  duration: 720h
+  renewBefore: 168h
+  subject:
+    organizations:
+      - ASWA
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  usages:
+    - server auth
+    - client auth
+  dnsNames:
+    - insight-service
+    - insight-service.aswa-production.svc
+    - insight-service.aswa-production.svc.cluster.local
+  issuerRef:
+    name: aswa-internal-ca
+    kind: ClusterIssuer

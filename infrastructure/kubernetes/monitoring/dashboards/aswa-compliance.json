@@ -1,0 +1,82 @@
+{
+  "title": "ASWA Compliance Dashboard",
+  "uid": "aswa-compliance",
+  "panels": [
+    {
+      "title": "Compliance Score by Framework",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "aswa_compliance_score{framework=\"soc2\"}",
+          "legendFormat": "SOC 2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": 0},
+              {"color": "yellow", "value": 70},
+              {"color": "green", "value": 90}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Failed Login Attempts (24h)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
+      "targets": [
+        {
+          "expr": "sum(increase(audit_events_total{action=\"login_failed\"}[24h]))"
+        }
+      ]
+    },
+    {
+      "title": "Data Access Requests",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
+      "targets": [
+        {
+          "expr": "sum(increase(audit_events_total{category=\"data_access\"}[24h]))"
+        }
+      ]
+    },
+    {
+      "title": "MFA Adoption Rate",
+      "type": "gauge",
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 0},
+      "targets": [
+        {
+          "expr": "sum(users_mfa_enabled) / sum(users_total) * 100"
+        }
+      ]
+    },
+    {
+      "title": "Control Status",
+      "type": "table",
+      "gridPos": {"h": 12, "w": 12, "x": 0, "y": 8},
+      "targets": [
+        {
+          "expr": "aswa_control_status",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Audit Events Timeline",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "targets": [
+        {
+          "expr": "sum(rate(audit_events_total[5m])) by (category)",
+          "legendFormat": "{{category}}"
+        }
+      ]
+    }
+  ]
+}
