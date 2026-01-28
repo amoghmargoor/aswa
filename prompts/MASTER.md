@@ -59,7 +59,7 @@ The Query Service handles natural language queries against processed documents u
 ### Analytics Generation
 - [x] `prompts/phase4/task-4.3.1-digest-generation.md` - Automated digest/summary generation
 - [x] `prompts/phase4/task-4.3.2-trend-detection.md` - Trend detection across documents
-- [ ] `prompts/phase4/task-4.3.3-anomaly-detection.md` - Anomaly detection in insights
+- [x] `prompts/phase4/task-4.3.3-anomaly-detection.md` - Anomaly detection in insights
 
 **Phase 4 Verification:**
 ```bash
