@@ -321,14 +321,87 @@ AIR-GAP: Supported
 
 ---
 
-### Category 5: Hyperscaler Platforms
+### Category 5: Foundation Model Providers & Hyperscaler Platforms
 
 | Platform | Description | Deployment | Key Strength | Key Weakness |
 |----------|-------------|------------|--------------|--------------|
+| **Anthropic Claude Enterprise** | Claude Teams/Enterprise + API | Cloud + Bedrock/Vertex | Best reasoning, MCP ecosystem | No on-prem, no GPT Store equivalent |
+| **OpenAI GPTs/Assistants** | Custom GPTs | OpenAI Cloud | GPT Store distribution, Code Interpreter | No on-prem, limited depth |
 | **Microsoft Copilot Studio** | M365 agent builder | Azure Cloud | Deep M365 integration | Microsoft lock-in |
 | **Google Vertex AI Agent** | GCP agent platform | Google Cloud | Gemini + Search grounding | GCP lock-in |
 | **Amazon Bedrock Agents** | AWS agent service | AWS | Multi-model choice | Complex, AWS expertise needed |
-| **OpenAI GPTs/Assistants** | Custom GPTs | OpenAI Cloud | Best models, easy start | No on-prem, limited depth |
+
+#### Anthropic Claude (Teams / Enterprise)
+
+```
+Company: Anthropic
+Funding: $7.3B+ raised
+Focus: Enterprise AI assistant and agent capabilities
+
+PRODUCT:
+├─ Claude Teams ($30/user/mo)
+├─ Claude Enterprise (custom pricing)
+├─ Claude API (tool use, 200K-500K context)
+├─ Claude Code CLI (agentic coding)
+├─ MCP (Model Context Protocol) - open standard
+├─ Computer Use (beta) - UI automation
+└─ Projects feature for organized workspaces
+
+STRENGTHS:
+├─ Best-in-class reasoning and instruction following
+├─ Largest context window (500K tokens Enterprise)
+├─ MCP ecosystem for extensibility (open standard)
+├─ Computer Use for UI automation (unique)
+├─ Strong coding capabilities (Claude Code)
+├─ Enterprise security (SOC 2, HIPAA eligible)
+├─ Available via AWS Bedrock + Google Vertex AI
+└─ Excellent at complex, multi-step tasks
+
+WEAKNESSES:
+├─ No built-in code interpreter (must use external)
+├─ No GPT Store equivalent for distribution
+├─ No native file retrieval (implement via tools)
+├─ No on-premise deployment
+├─ No fine-tuning available
+├─ No visual agent builder for non-developers
+└─ Smaller third-party integration ecosystem than OpenAI
+
+DEPLOYMENT: Anthropic Cloud, AWS Bedrock, Google Vertex AI
+ON-PREM: Not available
+AIR-GAP: Not available (Bedrock VPC is closest)
+AGENT CREATION: API + Claude Code CLI + MCP
+```
+
+**MCP (Model Context Protocol) - Key Differentiator:**
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    ANTHROPIC MCP ECOSYSTEM                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  MCP = Open standard for connecting AI to tools/data                    │
+│                                                                         │
+│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐               │
+│  │ MCP Client  │────►│ MCP Server  │────►│  External   │               │
+│  │ (Claude)    │     │ (Connector) │     │  System     │               │
+│  └─────────────┘     └─────────────┘     └─────────────┘               │
+│                                                                         │
+│  Supported Clients:                                                     │
+│  ├─ Claude Desktop                                                      │
+│  ├─ Claude Code CLI                                                     │
+│  └─ Third-party apps                                                    │
+│                                                                         │
+│  Available MCP Servers:                                                 │
+│  ├─ File system access                                                  │
+│  ├─ Database connections (Postgres, SQLite)                             │
+│  ├─ GitHub integration                                                  │
+│  ├─ Slack, Google Drive, etc.                                           │
+│  └─ Custom servers (easy to build)                                      │
+│                                                                         │
+│  ADVANTAGE: Open standard vs OpenAI's proprietary Assistants API        │
+│  LIMITATION: Requires technical setup, no visual builder                │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 #### OpenAI GPT Builder / Assistants API
 
@@ -339,25 +412,29 @@ Focus: Custom GPTs and Assistants API
 PRODUCT:
 ├─ GPT Builder (consumer, NLP-based)
 ├─ Assistants API (developer, code + config)
-├─ Code Interpreter
-├─ Retrieval / File Search
+├─ Code Interpreter (built-in sandbox)
+├─ Retrieval / File Search (built-in)
 ├─ Function calling
-└─ GPT Store distribution
+├─ GPT Store distribution
+└─ Operator (autonomous browser agent, 2025)
 
 STRENGTHS:
-├─ Easiest path to AI agents
-├─ Best foundation models
-├─ Massive user base
-├─ Rapid innovation
+├─ Easiest path to AI agents (GPT Builder)
+├─ Largest AI ecosystem and mindshare
+├─ Built-in Code Interpreter and file retrieval
+├─ GPT Store for distribution (millions of users)
+├─ Rapid innovation cycle
+├─ Real-time API for voice
 └─ Great developer experience
 
 WEAKNESSES:
 ├─ OpenAI hosted only
 ├─ Data privacy concerns for enterprise
-├─ Vendor lock-in
+├─ Vendor lock-in (proprietary)
 ├─ Limited workflow complexity
-├─ GPTs lack depth for enterprise
-└─ No on-premise option
+├─ GPTs lack depth for serious enterprise use
+├─ No on-premise option
+└─ Smaller context window than Claude
 
 DEPLOYMENT: OpenAI cloud only
 ON-PREM: Not available
@@ -418,6 +495,7 @@ Most AI platforms are **SaaS-only**, blocking adoption in regulated industries:
 │  Relevance AI        ✓      ✗          ✗         ✗         ✗           │
 │  Lindy.ai            ✓      ✗          ✗         ✗         ✗           │
 │  OpenAI GPTs         ✓      ✗          ✗         ✗         ✗           │
+│  Anthropic Claude    ✓      Partial*   ✗         ✗         ✗           │
 │  Workato             ✓      Partial    ✗         ✗         ✗           │
 │  ─────────────────────────────────────────────────────────────────────  │
 │  Cognigy             ✓      ✓          ✓         ✓         Partial     │
@@ -430,6 +508,8 @@ Most AI platforms are **SaaS-only**, blocking adoption in regulated industries:
 │  Bedrock Agents      ✓      ✓          ✗         Partial   ✓           │
 │  ─────────────────────────────────────────────────────────────────────  │
 │  ASWA (Target)       ✓      ✓          ✓         ✓         ✓           │
+│                                                                         │
+│  * Claude available via AWS Bedrock (VPC) and Google Vertex AI          │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -457,6 +537,7 @@ Most AI platforms are **SaaS-only**, blocking adoption in regulated industries:
 | **Relevance AI** | ★★★★☆ | ★★★★★ | ★★★★☆ | ★★☆☆☆ | ★★★☆☆ |
 | **Lindy.ai** | ★★★★★ | ★★☆☆☆ | ★★☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ |
 | **OpenAI GPTs** | ★★★★★ | ★★☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★★☆ |
+| **Claude Enterprise** | ★★★☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **Copilot Studio** | ★★★★☆ | ★★★★☆ | ★★★★☆ | ★★☆☆☆ | ★★★☆☆ |
 | **Cognigy** | ★★☆☆☆ | ★★★☆☆ | ★★★★★ | ★★★★☆ | ★★★★☆ |
 | **Voiceflow** | ★★☆☆☆ | ★★★☆☆ | ★★★★★ | ★★★☆☆ | ★★★☆☆ |
@@ -504,33 +585,40 @@ Most AI platforms are **SaaS-only**, blocking adoption in regulated industries:
 
 ### ASWA vs All Competitors
 
-| Capability | Glean | Dust | Relevance | Lindy | Moveworks | Cognigy | Copilot Studio | **ASWA** |
-|------------|:-----:|:----:|:---------:|:-----:|:---------:|:-------:|:--------------:|:--------:|
+| Capability | Glean | Dust | Relevance | Claude | OpenAI | Cognigy | Copilot Studio | **ASWA** |
+|------------|:-----:|:----:|:---------:|:------:|:------:|:-------:|:--------------:|:--------:|
 | **Document Intelligence** |
-| Enterprise Search | ★★★★★ | ★★★★☆ | ★★☆☆☆ | ★☆☆☆☆ | ★★☆☆☆ | ★★☆☆☆ | ★★★★☆ | ★★★★★ |
-| Multi-doc Reasoning | ★★★☆☆ | ★★★☆☆ | ★☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★☆☆☆☆ | ★★☆☆☆ | ★★★★★ |
-| Entity Extraction | ★★★☆☆ | ★★☆☆☆ | ★★☆☆☆ | ☆☆☆☆☆ | ★★☆☆☆ | ★★★☆☆ | ★★☆☆☆ | ★★★★★ |
+| Enterprise Search | ★★★★★ | ★★★★☆ | ★★☆☆☆ | ★★★☆☆ | ★★★☆☆ | ★★☆☆☆ | ★★★★☆ | ★★★★★ |
+| Multi-doc Reasoning | ★★★☆☆ | ★★★☆☆ | ★☆☆☆☆ | ★★★★☆ | ★★★☆☆ | ★☆☆☆☆ | ★★☆☆☆ | ★★★★★ |
+| Entity Extraction | ★★★☆☆ | ★★☆☆☆ | ★★☆☆☆ | ★★★☆☆ | ★★★☆☆ | ★★★☆☆ | ★★☆☆☆ | ★★★★★ |
 | **Agent Capabilities** |
 | Autonomous Agents | ☆☆☆☆☆ | ★★☆☆☆ | ★★★★☆ | ★★★★☆ | ★★★☆☆ | ★★★☆☆ | ★★★☆☆ | ★★★★★ |
-| Multi-Agent | ☆☆☆☆☆ | ★☆☆☆☆ | ★★★★☆ | ★★★★☆ | ☆☆☆☆☆ | ★★☆☆☆ | ★★☆☆☆ | ★★★★☆ |
-| Action Execution | ☆☆☆☆☆ | ★★☆☆☆ | ★★★★☆ | ★★★☆☆ | ★★★★★ | ★★★★☆ | ★★★★☆ | ★★★★★ |
+| Multi-Agent | ☆☆☆☆☆ | ★☆☆☆☆ | ★★★★☆ | ★★★☆☆ | ★★☆☆☆ | ★★☆☆☆ | ★★☆☆☆ | ★★★★☆ |
+| Action Execution | ☆☆☆☆☆ | ★★☆☆☆ | ★★★★☆ | ★★★★☆ | ★★★☆☆ | ★★★★☆ | ★★★★☆ | ★★★★★ |
+| Computer Use | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★★☆ | ★★★☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★☆☆ |
 | **Agent Creation** |
-| NLP/Natural Language | ☆☆☆☆☆ | ★★★☆☆ | ★★★★☆ | ★★★★★ | ☆☆☆☆☆ | ★★☆☆☆ | ★★★★☆ | ★★★★★ |
-| Visual Flow Builder | ☆☆☆☆☆ | ★★☆☆☆ | ★★★★☆ | ★★☆☆☆ | ☆☆☆☆☆ | ★★★★★ | ★★★★☆ | ★★★★★ |
-| Pre-built Templates | ★★☆☆☆ | ★★★☆☆ | ★★★★☆ | ★★★☆☆ | ★★★★☆ | ★★★★☆ | ★★★☆☆ | ★★★★★ |
-| Code SDK | ☆☆☆☆☆ | ★★★☆☆ | ★★★☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★★☆ | ★★★☆☆ | ★★★★★ |
+| NLP/Natural Language | ☆☆☆☆☆ | ★★★☆☆ | ★★★★☆ | ★★★☆☆ | ★★★★★ | ★★☆☆☆ | ★★★★☆ | ★★★★★ |
+| Visual Flow Builder | ☆☆☆☆☆ | ★★☆☆☆ | ★★★★☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★★★ | ★★★★☆ | ★★★★★ |
+| Pre-built Templates | ★★☆☆☆ | ★★★☆☆ | ★★★★☆ | ★★☆☆☆ | ★★★☆☆ | ★★★★☆ | ★★★☆☆ | ★★★★★ |
+| Code SDK | ☆☆☆☆☆ | ★★★☆☆ | ★★★☆☆ | ★★★★★ | ★★★★☆ | ★★★★☆ | ★★★☆☆ | ★★★★★ |
+| MCP/Open Standards | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★★★ | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★★☆ |
 | **Deployment** |
 | SaaS | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★★ |
-| Private Cloud | ★★☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★☆☆☆ | ★★★★★ | ★★★★☆ | ★★★★★ |
+| Private Cloud | ★★☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★☆☆ | ☆☆☆☆☆ | ★★★★★ | ★★★★☆ | ★★★★★ |
 | On-Premise | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★★★ | ☆☆☆☆☆ | ★★★★★ |
 | Air-Gap | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★★★ | ☆☆☆☆☆ | ★★★★★ |
 | BYOLLM | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★☆☆ | ☆☆☆☆☆ | ★★★★★ |
 | **Enterprise** |
-| SOC 2 | ★★★★★ | ★★★☆☆ | ★★★☆☆ | ★★☆☆☆ | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★★ |
-| HIPAA | ★★★☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★★☆ | ★★★★★ | ★★★★★ | ★★★★★ |
-| FedRAMP | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★★★ | ★★★★☆ |
-| Human-in-Loop | ★★☆☆☆ | ★★☆☆☆ | ★★★☆☆ | ★★☆☆☆ | ★★★☆☆ | ★★★★☆ | ★★★☆☆ | ★★★★★ |
-| Audit Trail | ★★★☆☆ | ★★☆☆☆ | ★★☆☆☆ | ★☆☆☆☆ | ★★★★☆ | ★★★★★ | ★★★★☆ | ★★★★★ |
+| SOC 2 | ★★★★★ | ★★★☆☆ | ★★★☆☆ | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★★ |
+| HIPAA | ★★★☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★★☆ | ★★★☆☆ | ★★★★★ | ★★★★★ | ★★★★★ |
+| FedRAMP | ☆☆☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★☆☆☆ | ☆☆☆☆☆ | ☆☆☆☆☆ | ★★★★★ | ★★★★☆ |
+| Human-in-Loop | ★★☆☆☆ | ★★☆☆☆ | ★★★☆☆ | ★★★☆☆ | ★★☆☆☆ | ★★★★☆ | ★★★☆☆ | ★★★★★ |
+| Audit Trail | ★★★☆☆ | ★★☆☆☆ | ★★☆☆☆ | ★★★☆☆ | ★★☆☆☆ | ★★★★★ | ★★★★☆ | ★★★★★ |
+| **Context & Reasoning** |
+| Context Window | 128K | 128K | 128K | 500K | 128K | N/A | 128K | 500K* |
+| Reasoning Quality | ★★★☆☆ | ★★★★☆ | ★★★☆☆ | ★★★★★ | ★★★★☆ | ★★★☆☆ | ★★★★☆ | ★★★★★ |
+
+*ASWA can use Claude, GPT-4, or open models via BYOLLM
 
 ---
 
@@ -649,10 +737,12 @@ No competitor offers all four. This is the gap.
 
 ---
 
-## Appendix: Startup Funding Summary
+## Appendix: Company Funding Summary
 
 | Company | Category | Funding | Valuation | Founded |
 |---------|----------|---------|-----------|---------|
+| **Anthropic** | Foundation Model | $7.3B+ | $18B+ | 2021 |
+| **OpenAI** | Foundation Model | $13B+ | $80B+ | 2015 |
 | Glean | Search | $200M+ | $4.6B | 2019 |
 | Moveworks | IT Automation | $200M+ | $2.1B | 2016 |
 | Workato | Automation | $290M+ | $5.7B | 2013 |
