@@ -189,17 +189,81 @@ pytest tests/ -v -k security
 
 ---
 
+## Phase 9: AI Agent Platform (32 tasks)
+
+Transform ASWA into an AI agent platform where users create custom agents using NLP.
+
+**Full specification:** `prompts/phase9/PHASE-9-OVERVIEW.md`
+
+### 9.1 Core Agent Framework
+- [x] `prompts/phase9/task-9.1.1-agent-service-setup.md` - Agent service setup
+- [x] `prompts/phase9/task-9.1.2-agent-base-classes.md` - Agent base classes and models
+- [ ] `prompts/phase9/task-9.1.3-agent-registry.md` - Agent registry singleton
+- [ ] `prompts/phase9/task-9.1.4-agent-orchestrator.md` - Agent orchestrator and execution
+- [ ] `prompts/phase9/task-9.1.5-action-repository.md` - Action persistence
+
+### 9.2 NLP Agent Generation
+- [ ] `prompts/phase9/task-9.2.1-intent-extraction.md` - Intent extraction from NLP
+- [ ] `prompts/phase9/task-9.2.2-capability-matcher.md` - Match intents to capabilities
+- [ ] `prompts/phase9/task-9.2.3-agent-definition-generator.md` - Generate agent YAML
+- [ ] `prompts/phase9/task-9.2.4-clarification-dialog.md` - Clarification conversation
+
+### 9.3 Agent Builder UI
+- [ ] `prompts/phase9/task-9.3.1-nlp-builder-ui.md` - NLP builder interface
+- [ ] `prompts/phase9/task-9.3.2-form-builder-ui.md` - Form-based builder
+- [ ] `prompts/phase9/task-9.3.3-visual-flow-builder.md` - Visual flow builder
+- [ ] `prompts/phase9/task-9.3.4-agent-editor.md` - Agent detail/edit page
+- [ ] `prompts/phase9/task-9.3.5-yaml-editor.md` - YAML editor for power users
+
+### 9.4 Action Blocks Library
+- [ ] `prompts/phase9/task-9.4.1-core-action-blocks.md` - Summarize, extract, search blocks
+- [ ] `prompts/phase9/task-9.4.2-integration-action-blocks.md` - Jira, Slack, Zendesk blocks
+- [ ] `prompts/phase9/task-9.4.3-logic-action-blocks.md` - Condition, loop, parallel blocks
+- [ ] `prompts/phase9/task-9.4.4-action-block-registry.md` - Block registry and discovery
+
+### 9.5 Testing & Debugging
+- [ ] `prompts/phase9/task-9.5.1-agent-test-runner.md` - Dry-run test execution
+- [ ] `prompts/phase9/task-9.5.2-execution-history.md` - Execution logs and history
+- [ ] `prompts/phase9/task-9.5.3-agent-debugging.md` - Debug tools and replay
+
+### 9.6 Approval & Governance
+- [ ] `prompts/phase9/task-9.6.1-approval-service.md` - Approval workflow service
+- [ ] `prompts/phase9/task-9.6.2-approval-ui.md` - Approval queue UI
+- [ ] `prompts/phase9/task-9.6.3-agent-permissions.md` - Permission system
+- [ ] `prompts/phase9/task-9.6.4-agent-audit-logging.md` - Agent-specific audit logs
+
+### 9.7 Templates & Marketplace
+- [ ] `prompts/phase9/task-9.7.1-agent-templates.md` - Template system and initial templates
+- [ ] `prompts/phase9/task-9.7.2-template-library-ui.md` - Template gallery UI
+- [ ] `prompts/phase9/task-9.7.3-agent-sharing.md` - Agent sharing and export
+
+### 9.8 Agent Integrations
+- [ ] `prompts/phase9/task-9.8.1-trigger-connectors.md` - Email, Slack, webhook triggers
+- [ ] `prompts/phase9/task-9.8.2-integration-oauth.md` - OAuth for new integrations
+- [ ] `prompts/phase9/task-9.8.3-agent-webhooks.md` - Outbound webhook actions
+- [ ] `prompts/phase9/task-9.8.4-agent-api.md` - Agent management REST API
+
+**Phase 9 Verification:**
+```bash
+cd services/agent-service && pytest tests/ -v
+curl http://localhost:8090/api/v1/agents/generate -X POST -d '{"prompt":"..."}'
+npm run test --prefix services/web-dashboard
+```
+
+---
+
 ## Progress Summary
 
 | Phase | Description | Tasks | Status |
 |-------|-------------|-------|--------|
-| 3 | Insight Service (from 3.3.2) | 5 | Not Started |
-| 4 | Query Service | 8 | Not Started |
-| 5 | Interface Layer | 10 | Not Started |
-| 6 | Output Integrations | 8 | Not Started |
-| 7 | Infrastructure & DevOps | 16 | Not Started |
-| 8 | Security & Compliance | 9 | Not Started |
-| **Total** | | **56** | |
+| 3 | Insight Service (from 3.3.2) | 5 | Mostly Complete |
+| 4 | Query Service | 8 | Complete |
+| 5 | Interface Layer | 10 | Complete |
+| 6 | Output Integrations | 8 | Complete |
+| 7 | Infrastructure & DevOps | 16 | Complete |
+| 8 | Security & Compliance | 9 | Complete |
+| 9 | AI Agent Platform | 32 | Not Started |
+| **Total** | | **88** | |
 
 ---
 
