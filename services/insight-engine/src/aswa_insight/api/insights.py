@@ -143,6 +143,28 @@ async def get_insights_summary(
     return {"success": True, "data": summary}
 
 
+@router.get("/insights/trends", response_model=dict[str, Any])
+async def get_insight_trends(
+    http_request: Request,
+    days: int = Query(30, ge=7, le=90),
+    insight_type: str | None = None,
+    tenant_ctx: TenantContext = Depends(get_tenant_context),
+) -> dict[str, Any]:
+    """Get insight trends over time."""
+    from aswa_insight.services.insight_service import InsightService
+
+    session_factory = http_request.app.state.session_factory
+    service = InsightService(session_factory)
+
+    trends = await service.get_trends(
+        tenant_id=tenant_ctx.tenant_id,
+        days=days,
+        insight_type=insight_type,
+    )
+
+    return {"success": True, "data": trends}
+
+
 @router.get("/insights/{insight_id}", response_model=dict[str, Any])
 async def get_insight(
     insight_id: UUID,
@@ -235,25 +257,3 @@ async def get_related_insights(
     )
 
     return {"success": True, "data": related}
-
-
-@router.get("/insights/trends", response_model=dict[str, Any])
-async def get_insight_trends(
-    http_request: Request,
-    days: int = Query(30, ge=7, le=90),
-    insight_type: str | None = None,
-    tenant_ctx: TenantContext = Depends(get_tenant_context),
-) -> dict[str, Any]:
-    """Get insight trends over time."""
-    from aswa_insight.services.insight_service import InsightService
-
-    session_factory = http_request.app.state.session_factory
-    service = InsightService(session_factory)
-
-    trends = await service.get_trends(
-        tenant_id=tenant_ctx.tenant_id,
-        days=days,
-        insight_type=insight_type,
-    )
-
-    return {"success": True, "data": trends}

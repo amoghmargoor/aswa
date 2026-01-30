@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { YAMLEditor } from '../YAMLEditor';
+import { YAMLEditor } from './YAMLEditor';
 import { useAgentBuilderStore } from '@/stores/agentBuilderStore';
 import * as hooks from '@/hooks/useAgentGeneration';
 

@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryInput } from './QueryInput';
 
@@ -13,7 +14,10 @@ describe('QueryInput', () => {
 
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Test query' } });
-    fireEvent.click(screen.getByRole('button'));
+    // Get the submit button (the one with the Send icon, not the Attach button)
+    const buttons = screen.getAllByRole('button');
+    const submitButton = buttons.find(btn => !btn.getAttribute('title')?.includes('Attach'));
+    fireEvent.click(submitButton!);
 
     expect(handleSubmit).toHaveBeenCalledWith('Test query');
   });
@@ -23,7 +27,9 @@ describe('QueryInput', () => {
 
     const input = screen.getByRole('textbox') as HTMLTextAreaElement;
     fireEvent.change(input, { target: { value: 'Test query' } });
-    fireEvent.click(screen.getByRole('button'));
+    const buttons = screen.getAllByRole('button');
+    const submitButton = buttons.find(btn => !btn.getAttribute('title')?.includes('Attach'));
+    fireEvent.click(submitButton!);
 
     expect(input.value).toBe('');
   });
@@ -34,6 +40,8 @@ describe('QueryInput', () => {
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Test query' } });
 
-    expect(screen.getByRole('button')).toBeDisabled();
+    const buttons = screen.getAllByRole('button');
+    const submitButton = buttons.find(btn => !btn.getAttribute('title')?.includes('Attach'));
+    expect(submitButton).toBeDisabled();
   });
 });

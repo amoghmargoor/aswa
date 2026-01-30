@@ -121,7 +121,7 @@ class NotificationService:
             template_id=notification.template_id,
             template_data=notification.template_data,
             scheduled_at=notification.scheduled_at,
-            metadata=notification.metadata,
+            notification_metadata=notification.metadata,
         )
 
         async with self._get_session() as session:

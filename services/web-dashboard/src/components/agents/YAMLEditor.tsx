@@ -46,7 +46,7 @@ export function YAMLEditor({ readOnly = false, onSyncToVisual }: YAMLEditorProps
 
   // Generate YAML from current state if none exists
   useEffect(() => {
-    if (!yamlContent && (trigger || actions.length > 0)) {
+    if (!yamlContent && (trigger || actions.length > 0 || conditions.length > 0)) {
       const generated = generateYamlFromState();
       setYamlContent(generated);
     }

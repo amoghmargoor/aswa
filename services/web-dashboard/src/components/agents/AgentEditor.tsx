@@ -193,10 +193,11 @@ export function AgentEditor({ nodeId, nodeType, onClose }: AgentEditorProps) {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Name field */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="node-name" className="block text-sm font-medium text-gray-700 mb-1">
             Name
           </label>
           <Input
+            id="node-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Enter a name..."
@@ -206,10 +207,11 @@ export function AgentEditor({ nodeId, nodeType, onClose }: AgentEditorProps) {
         {/* Condition-specific: Expression */}
         {nodeType === 'condition' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="condition-expression" className="block text-sm font-medium text-gray-700 mb-1">
               Expression
             </label>
             <textarea
+              id="condition-expression"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., confidence > 0.8"
@@ -257,16 +259,18 @@ interface ConfigFieldInputProps {
 
 function ConfigFieldInput({ field, value, onChange, error }: ConfigFieldInputProps) {
   const [arrayValue, setArrayValue] = useState('');
+  const fieldId = `field-${field.name}`;
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      <label htmlFor={fieldId} className="block text-sm font-medium text-gray-700 mb-1">
         {field.label}
         {field.required && <span className="text-red-500 ml-1">*</span>}
       </label>
 
       {field.type === 'string' && (
         <Input
+          id={fieldId}
           value={(value as string) || ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
@@ -276,6 +280,7 @@ function ConfigFieldInput({ field, value, onChange, error }: ConfigFieldInputPro
 
       {field.type === 'password' && (
         <Input
+          id={fieldId}
           type="password"
           value={(value as string) || ''}
           onChange={(e) => onChange(e.target.value)}
@@ -286,6 +291,7 @@ function ConfigFieldInput({ field, value, onChange, error }: ConfigFieldInputPro
 
       {field.type === 'number' && (
         <Input
+          id={fieldId}
           type="number"
           value={(value as number) || ''}
           onChange={(e) => onChange(Number(e.target.value))}
@@ -296,6 +302,7 @@ function ConfigFieldInput({ field, value, onChange, error }: ConfigFieldInputPro
 
       {field.type === 'time' && (
         <Input
+          id={fieldId}
           type="time"
           value={(value as string) || ''}
           onChange={(e) => onChange(e.target.value)}
@@ -306,6 +313,7 @@ function ConfigFieldInput({ field, value, onChange, error }: ConfigFieldInputPro
       {field.type === 'boolean' && (
         <label className="flex items-center gap-2 cursor-pointer">
           <input
+            id={fieldId}
             type="checkbox"
             checked={Boolean(value)}
             onChange={(e) => onChange(e.target.checked)}
@@ -317,6 +325,7 @@ function ConfigFieldInput({ field, value, onChange, error }: ConfigFieldInputPro
 
       {field.type === 'select' && (
         <select
+          id={fieldId}
           value={(value as string) || ''}
           onChange={(e) => onChange(e.target.value)}
           className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
@@ -415,6 +424,7 @@ function ConfigFieldInput({ field, value, onChange, error }: ConfigFieldInputPro
 
       {(field.type === 'textarea' || field.type === 'code') && (
         <textarea
+          id={fieldId}
           value={(value as string) || ''}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}

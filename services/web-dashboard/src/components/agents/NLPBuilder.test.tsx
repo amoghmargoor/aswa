@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { NLPBuilder } from '../NLPBuilder';
+import { NLPBuilder } from './NLPBuilder';
 import { useAgentBuilderStore } from '@/stores/agentBuilderStore';
 import * as hooks from '@/hooks/useAgentGeneration';
 
@@ -152,41 +152,36 @@ describe('NLPBuilder Store Integration', () => {
   });
 
   it('adds messages to store', () => {
-    const store = useAgentBuilderStore.getState();
+    useAgentBuilderStore.getState().addMessage({ role: 'user', content: 'Hello' });
 
-    store.addMessage({ role: 'user', content: 'Hello' });
-
-    expect(store.messages).toHaveLength(1);
-    expect(store.messages[0].role).toBe('user');
-    expect(store.messages[0].content).toBe('Hello');
-    expect(store.messages[0].id).toBeDefined();
-    expect(store.messages[0].timestamp).toBeDefined();
+    const state = useAgentBuilderStore.getState();
+    expect(state.messages).toHaveLength(1);
+    expect(state.messages[0].role).toBe('user');
+    expect(state.messages[0].content).toBe('Hello');
+    expect(state.messages[0].id).toBeDefined();
+    expect(state.messages[0].timestamp).toBeDefined();
   });
 
   it('updates last message', () => {
-    const store = useAgentBuilderStore.getState();
+    useAgentBuilderStore.getState().addMessage({ role: 'assistant', content: 'Loading...' });
+    useAgentBuilderStore.getState().updateLastMessage({ content: 'Done!', isLoading: false });
 
-    store.addMessage({ role: 'assistant', content: 'Loading...' });
-    store.updateLastMessage({ content: 'Done!', isLoading: false });
-
-    expect(store.messages[0].content).toBe('Done!');
-    expect(store.messages[0].isLoading).toBe(false);
+    const state = useAgentBuilderStore.getState();
+    expect(state.messages[0].content).toBe('Done!');
+    expect(state.messages[0].isLoading).toBe(false);
   });
 
   it('starts session correctly', () => {
-    const store = useAgentBuilderStore.getState();
+    useAgentBuilderStore.getState().startSession('session-123');
 
-    store.startSession('session-123');
-
-    expect(store.sessionId).toBe('session-123');
-    expect(store.isSessionActive).toBe(true);
+    const state = useAgentBuilderStore.getState();
+    expect(state.sessionId).toBe('session-123');
+    expect(state.isSessionActive).toBe(true);
   });
 
   it('clears conversation', () => {
-    const store = useAgentBuilderStore.getState();
-
-    store.addMessage({ role: 'user', content: 'test' });
-    store.setCurrentQuestions([{
+    useAgentBuilderStore.getState().addMessage({ role: 'user', content: 'test' });
+    useAgentBuilderStore.getState().setCurrentQuestions([{
       id: '1',
       type: 'missing_trigger',
       question: 'What trigger?',
@@ -196,9 +191,10 @@ describe('NLPBuilder Store Integration', () => {
       priority: 1,
     }]);
 
-    store.clearConversation();
+    useAgentBuilderStore.getState().clearConversation();
 
-    expect(store.messages).toHaveLength(0);
-    expect(store.currentQuestions).toHaveLength(0);
+    const state = useAgentBuilderStore.getState();
+    expect(state.messages).toHaveLength(0);
+    expect(state.currentQuestions).toHaveLength(0);
   });
 });
