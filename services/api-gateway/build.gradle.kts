@@ -31,9 +31,9 @@ dependencies {
     implementation("io.r2dbc:r2dbc-pool")
 
     // JWT
-    implementation("io.jsonwebtoken:jjwt-api:0.12.3")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3")
+    implementation("io.jsonwebtoken:jjwt-api:0.13.0")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.13.0")
 
     // OpenAPI
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.3.0")
