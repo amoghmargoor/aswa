@@ -47,7 +47,7 @@ jobs:
           echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
 
       - name: Build and push API Gateway
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: services/api-gateway/Dockerfile
@@ -64,7 +64,7 @@ jobs:
             COMMIT=${{ github.sha }}
 
       - name: Build and push Ingestion Service
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: services/ingestion-service/Dockerfile
@@ -77,7 +77,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build and push Query Service
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: services/query-service/Dockerfile
@@ -90,7 +90,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build and push Insight Service
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: services/insight-service/Dockerfile
@@ -103,7 +103,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build and push Web Dashboard
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: services/web-dashboard
           file: services/web-dashboard/Dockerfile
