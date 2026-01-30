@@ -36,14 +36,18 @@ class TestCase(BaseModel):
     expected_actions: list[str] = Field(default_factory=list)
     timeout_seconds: int = 30
     assertions: list["TestAssertion"] = Field(default_factory=list)
+    setup: dict[str, Any] | None = None
+    teardown: dict[str, Any] | None = None
 
 
 class TestAssertion(BaseModel):
     """An assertion to verify in a test."""
 
-    type: str  # "output_equals", "output_contains", "action_called", "status_is"
-    target: str  # action_id or output key
+    type: str  # "output_equals", "output_contains", "action_called", "status", "timing"
     expected: Any = None
+    target: str | None = None  # action_id or output key
+    path: str | None = None  # JSON path for output assertions
+    description: str = ""
     message: str = ""
 
 
@@ -60,6 +64,11 @@ class TestResult(BaseModel):
     started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: datetime | None = None
 
+    @property
+    def test_name(self) -> str:
+        """Alias for test_case_name."""
+        return self.test_case_name
+
 
 class TestSuite(BaseModel):
     """A collection of test cases."""
@@ -68,6 +77,8 @@ class TestSuite(BaseModel):
     name: str
     description: str = ""
     agent_id: UUID | None = None
+    agent_definition: dict[str, Any] | None = None
+    tenant_id: UUID | None = None
     test_cases: list[TestCase] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -85,6 +96,11 @@ class TestSuiteResult(BaseModel):
     test_results: list[TestResult] = Field(default_factory=list)
     started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: datetime | None = None
+
+    @property
+    def results(self) -> list[TestResult]:
+        """Alias for test_results."""
+        return self.test_results
 
 
 class AgentSandbox:
@@ -104,6 +120,11 @@ class AgentSandbox:
             component="AgentSandbox",
             run_id=str(self.run_id),
         )
+        self._execution_trace: dict[str, Any] = {"steps": [], "started_at": None, "completed_at": None}
+
+    def get_execution_trace(self) -> dict[str, Any]:
+        """Get the execution trace from the last run."""
+        return self._execution_trace
 
     async def execute(
         self,
@@ -115,6 +136,11 @@ class AgentSandbox:
 
         start_time = time.time()
         results: list[ActionResult] = []
+        self._execution_trace = {
+            "steps": [],
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "completed_at": None,
+        }
 
         try:
             # Build context
@@ -213,17 +239,27 @@ class AgentSandbox:
 class TestRunner:
     """Runs test suites against agents."""
 
-    def __init__(self, tenant_id: UUID):
+    def __init__(
+        self,
+        tenant_id: UUID,
+        agent_definition: dict[str, Any] | None = None,
+    ):
         self.tenant_id = tenant_id
+        self.agent_definition = agent_definition
         self._logger = logger.bind(component="TestRunner")
 
     async def run_suite(
         self,
         suite: TestSuite,
-        agent_definition: dict[str, Any],
+        agent_definition: dict[str, Any] | None = None,
     ) -> TestSuiteResult:
         """Run all tests in a suite."""
         import time
+
+        # Use provided agent_definition or fall back to suite's or instance's
+        definition = agent_definition or suite.agent_definition or self.agent_definition
+        if not definition:
+            raise ValueError("No agent definition provided")
 
         start_time = time.time()
         results: list[TestResult] = []
@@ -235,7 +271,7 @@ class TestRunner:
         )
 
         for test_case in suite.test_cases:
-            result = await self.run_test(test_case, agent_definition)
+            result = await self.run_test(test_case, definition)
             results.append(result)
 
         # Calculate summary
@@ -268,10 +304,15 @@ class TestRunner:
     async def run_test(
         self,
         test_case: TestCase,
-        agent_definition: dict[str, Any],
+        agent_definition: dict[str, Any] | None = None,
     ) -> TestResult:
         """Run a single test case."""
         import time
+
+        # Use provided agent_definition or fall back to instance's
+        definition = agent_definition or self.agent_definition
+        if not definition:
+            raise ValueError("No agent definition provided")
 
         start_time = time.time()
         result = TestResult(
@@ -283,7 +324,7 @@ class TestRunner:
         try:
             # Create sandbox and execute
             sandbox = AgentSandbox(
-                agent_definition=agent_definition,
+                agent_definition=definition,
                 tenant_id=self.tenant_id,
                 mock_integrations=True,
             )

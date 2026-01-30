@@ -2,6 +2,7 @@
 
 from aswa_agents.governance.approval import (
     AccessControl,
+    Approval,
     ApprovalAction,
     ApprovalPolicy,
     ApprovalRequest,
@@ -23,6 +24,7 @@ from aswa_agents.governance.versioning import (
 
 __all__ = [
     "AccessControl",
+    "Approval",
     "ApprovalAction",
     "ApprovalPolicy",
     "ApprovalRequest",

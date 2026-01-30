@@ -278,9 +278,9 @@ async def publish_agent_version(
 @router.post("/{agent_id}/rollback")
 async def rollback_agent(
     agent_id: UUID,
-    target_version: int = Query(..., description="Version to rollback to"),
     tenant_id: Annotated[str, Depends(get_current_tenant)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    target_version: int = Query(..., description="Version to rollback to"),
     user_id: str = Query(..., description="User ID"),
 ):
     """Rollback an agent to a previous version."""

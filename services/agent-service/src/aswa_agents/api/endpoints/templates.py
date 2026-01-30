@@ -213,8 +213,8 @@ async def delete_template(
 @router.post("/{template_id}/preview", response_model=PreviewResponse)
 async def preview_template(
     template_id: UUID,
-    variables: dict[str, Any] | None = None,
     tenant_id: Annotated[str, Depends(get_current_tenant)],
+    variables: dict[str, Any] | None = None,
 ) -> PreviewResponse:
     """Preview template with optional variable values."""
     library = TemplateLibrary(UUID(tenant_id))

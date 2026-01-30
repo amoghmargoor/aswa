@@ -156,6 +156,29 @@ class VersionManager:
 
         return version
 
+    async def archive_version(
+        self,
+        agent_id: UUID,
+        version_id: UUID,
+    ) -> AgentVersion:
+        """Archive a version."""
+        versions = self._versions.get(agent_id, [])
+
+        # Find the version
+        version = next((v for v in versions if v.id == version_id), None)
+        if not version:
+            raise ValueError(f"Version {version_id} not found")
+
+        version.status = VersionStatus.ARCHIVED
+
+        self._logger.info(
+            "Version archived",
+            agent_id=str(agent_id),
+            version=version.version_number,
+        )
+
+        return version
+
     async def get_versions(
         self,
         agent_id: UUID,

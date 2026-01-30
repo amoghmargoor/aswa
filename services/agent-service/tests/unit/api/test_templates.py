@@ -144,7 +144,7 @@ class TestTemplatesEndpoints:
             assert "valid" in data
             assert "errors" in data
 
-    def test_instantiate_template(self, client, mock_db_session):
+    def test_instantiate_template(self, client):
         """Test instantiating a template."""
         list_response = client.get("/api/v1/templates")
         templates = list_response.json()["templates"]

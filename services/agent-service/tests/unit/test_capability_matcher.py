@@ -147,6 +147,7 @@ class TestCapabilityMatcher:
                     type=IntentType.ACTION_SEND_MESSAGE,
                     confidence=0.85,
                     description="Send Slack",
+                    parameters={"channel": "#general", "message": "{{summary}}"},
                 ),
             ],
         )

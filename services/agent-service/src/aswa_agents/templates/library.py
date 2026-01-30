@@ -477,12 +477,12 @@ class TemplateEngine:
         values: dict[str, Any],
     ) -> dict[str, Any]:
         """Apply default values for missing variables."""
-        result = {}
+        # Start with all provided values
+        result = dict(values)
 
+        # Apply defaults for missing template variables
         for variable in template.variables:
-            if variable.name in values:
-                result[variable.name] = values[variable.name]
-            elif variable.default is not None:
+            if variable.name not in result and variable.default is not None:
                 result[variable.name] = variable.default
 
         return result

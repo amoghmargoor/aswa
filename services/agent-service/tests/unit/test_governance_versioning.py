@@ -107,8 +107,9 @@ class TestVersionManager:
         versions = await manager.get_versions(agent_id)
 
         assert len(versions) == 3
-        assert versions[0].version_number == 1
-        assert versions[2].version_number == 3
+        # Versions are sorted descending (most recent first)
+        assert versions[0].version_number == 3
+        assert versions[2].version_number == 1
 
     @pytest.mark.asyncio
     async def test_get_specific_version(self, manager, agent_id, sample_definition):
@@ -218,7 +219,7 @@ class TestVersionManager:
             created_by=user_id,
         )
 
-        diff = await manager.compare_versions(agent_id, 1, 2)
+        diff = await manager.diff_versions(agent_id, 1, 2)
 
         assert isinstance(diff, VersionDiff)
         assert diff.from_version == 1

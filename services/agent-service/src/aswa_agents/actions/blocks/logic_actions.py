@@ -292,6 +292,12 @@ class BranchAction(CompositeAction):
             "None": None,
         }
 
+        # Add trigger data at top level for easy access
+        eval_context.update(context.trigger_data)
+
+        # Add variables at top level
+        eval_context.update(context.variables)
+
         for action_id, output in context.previous_outputs.items():
             if isinstance(output, dict):
                 eval_context.update(output)
