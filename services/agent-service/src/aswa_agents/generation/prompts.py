@@ -85,3 +85,30 @@ User's clarification/update: "{new_input}"
 
 Update the intents based on this new information. Return the complete updated intent structure.
 """
+
+# Summarization prompts for different styles
+SUMMARIZATION_PROMPTS = {
+    "brief": """Provide a brief summary of the following content in 2-3 sentences:
+
+{content}
+
+Summary:""",
+    "detailed": """Provide a detailed summary of the following content, covering all main points:
+
+{content}
+
+Detailed Summary:""",
+    "bullet_points": """Summarize the following content as a list of key bullet points:
+
+{content}
+
+Key Points:
+- """,
+}
+
+KEY_POINTS_PROMPT = """Extract the key points from the following content as a list:
+
+{content}
+
+Key Points (as a JSON array of strings):
+"""

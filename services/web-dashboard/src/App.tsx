@@ -5,6 +5,8 @@ import Dashboard from '@/pages/Dashboard';
 import Query from '@/pages/Query';
 import Insights from '@/pages/Insights';
 import Settings from '@/pages/Settings';
+import Agents from '@/pages/Agents';
+import AgentBuilder from '@/pages/AgentBuilder';
 import { useAuth } from '@/hooks/useAuth';
 
 function App() {
@@ -29,6 +31,9 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/query" element={<Query />} />
           <Route path="/insights" element={<Insights />} />
+          <Route path="/agents" element={<Agents />} />
+          <Route path="/agents/new" element={<AgentBuilder />} />
+          <Route path="/agents/:id/edit" element={<AgentBuilder />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
