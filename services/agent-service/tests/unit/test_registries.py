@@ -5,10 +5,25 @@ import pytest
 from aswa_agents.core.registry import AgentRegistry
 from aswa_agents.actions.registry import ActionBlockRegistry
 from aswa_agents.connectors.registry import ConnectorRegistry
+from aswa_agents.core.base import Agent
+from aswa_agents.core.models import Action, ActionContext, ActionResult, TriggerData
+from aswa_agents.core.types import ActionType, ActionStatus, TriggerType
+
+
+class MockAction(Action):
+    """Mock action for testing."""
+    pass
 
 
 class TestAgentRegistry:
     """Test AgentRegistry class."""
+
+    @pytest.fixture(autouse=True)
+    def setup_and_teardown(self):
+        """Clear registry before and after each test."""
+        AgentRegistry.clear()
+        yield
+        AgentRegistry.clear()
 
     def test_initialize(self):
         """Test registry initialization."""
@@ -17,33 +32,66 @@ class TestAgentRegistry:
 
     def test_register_and_get(self):
         """Test registering and retrieving agents."""
-        AgentRegistry.initialize()
+        @AgentRegistry.register
+        class DummyAgent(Agent[MockAction]):
+            @property
+            def supported_trigger_types(self) -> list[str]:
+                return ["manual"]
 
-        class DummyAgent:
-            pass
+            @property
+            def required_permissions(self) -> list[str]:
+                return []
 
-        AgentRegistry.register("dummy", DummyAgent)
-        assert AgentRegistry.get("dummy") == DummyAgent
+            async def should_trigger(self, trigger, context):
+                return True
+
+            async def plan_actions(self, trigger, context):
+                return []
+
+            async def execute(self, action, context):
+                return ActionResult(action_id=action.id, status=ActionStatus.COMPLETED)
+
+        assert AgentRegistry.get_agent_class("DummyAgent") == DummyAgent
 
     def test_get_nonexistent(self):
         """Test getting non-existent agent."""
         AgentRegistry.initialize()
-        assert AgentRegistry.get("nonexistent") is None
+        assert AgentRegistry.get_agent_class("nonexistent") is None
 
     def test_list_agents(self):
         """Test listing registered agents."""
-        AgentRegistry.initialize()
+        @AgentRegistry.register
+        class TestAgent(Agent[MockAction]):
+            @property
+            def supported_trigger_types(self) -> list[str]:
+                return ["manual"]
 
-        class TestAgent:
-            pass
+            @property
+            def required_permissions(self) -> list[str]:
+                return []
 
-        AgentRegistry.register("test", TestAgent)
+            async def should_trigger(self, trigger, context):
+                return True
+
+            async def plan_actions(self, trigger, context):
+                return []
+
+            async def execute(self, action, context):
+                return ActionResult(action_id=action.id, status=ActionStatus.COMPLETED)
+
         agents = AgentRegistry.list_agents()
-        assert "test" in agents
+        assert any(a["name"] == "TestAgent" for a in agents)
 
 
 class TestActionBlockRegistry:
     """Test ActionBlockRegistry class."""
+
+    @pytest.fixture(autouse=True)
+    def setup_and_teardown(self):
+        """Clear registry before and after each test."""
+        ActionBlockRegistry.clear()
+        yield
+        ActionBlockRegistry.clear()
 
     def test_initialize(self):
         """Test registry initialization."""
@@ -74,6 +122,13 @@ class TestActionBlockRegistry:
 
 class TestConnectorRegistry:
     """Test ConnectorRegistry class."""
+
+    @pytest.fixture(autouse=True)
+    def setup_and_teardown(self):
+        """Clear registry before and after each test."""
+        ConnectorRegistry.clear()
+        yield
+        ConnectorRegistry.clear()
 
     def test_initialize(self):
         """Test registry initialization."""

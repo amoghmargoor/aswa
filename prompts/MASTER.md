@@ -198,8 +198,8 @@ Transform ASWA into an AI agent platform where users create custom agents using 
 ### 9.1 Core Agent Framework
 - [x] `prompts/phase9/task-9.1.1-agent-service-setup.md` - Agent service setup
 - [x] `prompts/phase9/task-9.1.2-agent-base-classes.md` - Agent base classes and models
-- [ ] `prompts/phase9/task-9.1.3-agent-registry.md` - Agent registry singleton
-- [ ] `prompts/phase9/task-9.1.4-agent-orchestrator.md` - Agent orchestrator and execution
+- [x] `prompts/phase9/task-9.1.3-agent-registry.md` - Agent registry singleton
+- [x] `prompts/phase9/task-9.1.4-agent-orchestrator.md` - Agent orchestrator and execution
 - [ ] `prompts/phase9/task-9.1.5-action-repository.md` - Action persistence
 
 ### 9.2 NLP Agent Generation

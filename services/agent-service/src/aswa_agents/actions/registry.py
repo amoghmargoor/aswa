@@ -34,3 +34,9 @@ class ActionBlockRegistry:
     def is_initialized(cls) -> bool:
         """Check if registry is initialized."""
         return cls._initialized
+
+    @classmethod
+    def clear(cls) -> None:
+        """Clear all registered blocks. Useful for testing."""
+        cls._blocks.clear()
+        cls._initialized = False

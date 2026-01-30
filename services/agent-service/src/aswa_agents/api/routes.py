@@ -9,6 +9,7 @@ from aswa_agents.api.endpoints import (
     templates,
     actions,
     generation,
+    registry,
 )
 
 
@@ -21,3 +22,4 @@ router.include_router(approvals.router, prefix="/approvals", tags=["approvals"])
 router.include_router(templates.router, prefix="/templates", tags=["templates"])
 router.include_router(actions.router, prefix="/actions", tags=["actions"])
 router.include_router(generation.router, prefix="/generate", tags=["generation"])
+router.include_router(registry.router)

@@ -30,3 +30,14 @@ class ConnectorRegistry:
     def list_connectors(cls) -> list[str]:
         """List all registered connector names."""
         return list(cls._connectors.keys())
+
+    @classmethod
+    def is_initialized(cls) -> bool:
+        """Check if registry is initialized."""
+        return cls._initialized
+
+    @classmethod
+    def clear(cls) -> None:
+        """Clear all registered connectors. Useful for testing."""
+        cls._connectors.clear()
+        cls._initialized = False
