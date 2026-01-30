@@ -22,7 +22,7 @@ dependencies {
     implementation("com.google.guava:guava:${property("guavaVersion")}")
 
     // JSpecify annotations
-    compileOnly("org.jspecify:jspecify:0.3.0")
+    compileOnly("org.jspecify:jspecify:1.0.0")
 
     // Test dependencies
     testImplementation("org.junit.jupiter:junit-jupiter:${property("junitVersion")}")
