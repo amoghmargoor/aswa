@@ -5,7 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 from sqlalchemy import Column, String, DateTime, JSON, Boolean, Integer, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
@@ -73,7 +73,7 @@ class NotificationDB(Base):
     delivered_at = Column(DateTime, nullable=True)
     read_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    metadata = Column(JSON, default={})
+    notification_metadata = Column("metadata", JSON, default={})
 
 
 class NotificationCreate(BaseModel):

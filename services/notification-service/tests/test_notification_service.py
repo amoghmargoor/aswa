@@ -121,42 +121,29 @@ class TestTemplateService:
 
 
 class TestEmailChannel:
-    def test_verify_valid_email(self):
+    @pytest.mark.asyncio
+    async def test_verify_valid_email(self):
         """Test email validation."""
         from aswa_notifications.channels.email import EmailChannel
 
         channel = EmailChannel(MagicMock())
-
-        # We need to make verify_recipient a sync test
-        import asyncio
-
-        result = asyncio.get_event_loop().run_until_complete(
-            channel.verify_recipient({"email": "test@example.com"})
-        )
+        result = await channel.verify_recipient({"email": "test@example.com"})
         assert result is True
 
-    def test_verify_invalid_email(self):
+    @pytest.mark.asyncio
+    async def test_verify_invalid_email(self):
         """Test invalid email validation."""
         from aswa_notifications.channels.email import EmailChannel
 
         channel = EmailChannel(MagicMock())
-
-        import asyncio
-
-        result = asyncio.get_event_loop().run_until_complete(
-            channel.verify_recipient({"email": "invalid-email"})
-        )
+        result = await channel.verify_recipient({"email": "invalid-email"})
         assert result is False
 
-    def test_verify_missing_email(self):
+    @pytest.mark.asyncio
+    async def test_verify_missing_email(self):
         """Test missing email validation."""
         from aswa_notifications.channels.email import EmailChannel
 
         channel = EmailChannel(MagicMock())
-
-        import asyncio
-
-        result = asyncio.get_event_loop().run_until_complete(
-            channel.verify_recipient({})
-        )
+        result = await channel.verify_recipient({})
         assert result is False

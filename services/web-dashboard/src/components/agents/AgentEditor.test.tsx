@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { AgentEditor } from '../AgentEditor';
+import { AgentEditor } from './AgentEditor';
 import { useAgentBuilderStore } from '@/stores/agentBuilderStore';
 
 describe('AgentEditor', () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { FlowBuilder } from '../FlowBuilder';
+import { FlowBuilder } from './FlowBuilder';
 import { useAgentBuilderStore } from '@/stores/agentBuilderStore';
 
 describe('FlowBuilder', () => {
@@ -190,9 +190,7 @@ describe('FlowBuilder Store', () => {
   });
 
   it('adds action with correct dependencies', () => {
-    const store = useAgentBuilderStore.getState();
-
-    store.addAction({
+    useAgentBuilderStore.getState().addAction({
       id: 'action-1',
       type: 'summarize',
       name: 'Summarize',
@@ -201,7 +199,7 @@ describe('FlowBuilder Store', () => {
       order: 0,
     });
 
-    store.addAction({
+    useAgentBuilderStore.getState().addAction({
       id: 'action-2',
       type: 'send_message',
       name: 'Send Slack',
@@ -210,15 +208,14 @@ describe('FlowBuilder Store', () => {
       order: 1,
     });
 
-    expect(store.actions).toHaveLength(2);
-    expect(store.actions[0].order).toBe(0);
-    expect(store.actions[1].order).toBe(1);
+    const state = useAgentBuilderStore.getState();
+    expect(state.actions).toHaveLength(2);
+    expect(state.actions[0].order).toBe(0);
+    expect(state.actions[1].order).toBe(1);
   });
 
   it('reorders actions correctly', () => {
-    const store = useAgentBuilderStore.getState();
-
-    store.addAction({
+    useAgentBuilderStore.getState().addAction({
       id: 'action-1',
       type: 'summarize',
       name: 'First',
@@ -227,7 +224,7 @@ describe('FlowBuilder Store', () => {
       order: 0,
     });
 
-    store.addAction({
+    useAgentBuilderStore.getState().addAction({
       id: 'action-2',
       type: 'send_message',
       name: 'Second',
@@ -236,18 +233,17 @@ describe('FlowBuilder Store', () => {
       order: 1,
     });
 
-    store.reorderActions(1, 0);
+    useAgentBuilderStore.getState().reorderActions(1, 0);
 
-    expect(store.actions[0].id).toBe('action-2');
-    expect(store.actions[1].id).toBe('action-1');
-    expect(store.actions[0].order).toBe(0);
-    expect(store.actions[1].order).toBe(1);
+    const state = useAgentBuilderStore.getState();
+    expect(state.actions[0].id).toBe('action-2');
+    expect(state.actions[1].id).toBe('action-1');
+    expect(state.actions[0].order).toBe(0);
+    expect(state.actions[1].order).toBe(1);
   });
 
   it('removes action and updates dependencies', () => {
-    const store = useAgentBuilderStore.getState();
-
-    store.addAction({
+    useAgentBuilderStore.getState().addAction({
       id: 'action-1',
       type: 'summarize',
       name: 'First',
@@ -256,7 +252,7 @@ describe('FlowBuilder Store', () => {
       order: 0,
     });
 
-    store.addAction({
+    useAgentBuilderStore.getState().addAction({
       id: 'action-2',
       type: 'send_message',
       name: 'Second',
@@ -265,30 +261,29 @@ describe('FlowBuilder Store', () => {
       order: 1,
     });
 
-    store.removeAction('action-1');
+    useAgentBuilderStore.getState().removeAction('action-1');
 
-    expect(store.actions).toHaveLength(1);
-    expect(store.actions[0].dependsOn).not.toContain('action-1');
+    const state = useAgentBuilderStore.getState();
+    expect(state.actions).toHaveLength(1);
+    expect(state.actions[0].dependsOn).not.toContain('action-1');
   });
 
   it('manages connecting state', () => {
-    const store = useAgentBuilderStore.getState();
+    useAgentBuilderStore.getState().startConnecting('source-id');
 
-    store.startConnecting('source-id');
+    let state = useAgentBuilderStore.getState();
+    expect(state.isConnecting).toBe(true);
+    expect(state.connectionSource).toBe('source-id');
 
-    expect(store.isConnecting).toBe(true);
-    expect(store.connectionSource).toBe('source-id');
+    useAgentBuilderStore.getState().cancelConnecting();
 
-    store.cancelConnecting();
-
-    expect(store.isConnecting).toBe(false);
-    expect(store.connectionSource).toBeNull();
+    state = useAgentBuilderStore.getState();
+    expect(state.isConnecting).toBe(false);
+    expect(state.connectionSource).toBeNull();
   });
 
   it('finishes connecting and adds dependency', () => {
-    const store = useAgentBuilderStore.getState();
-
-    store.addAction({
+    useAgentBuilderStore.getState().addAction({
       id: 'action-1',
       type: 'summarize',
       name: 'First',
@@ -297,7 +292,7 @@ describe('FlowBuilder Store', () => {
       order: 0,
     });
 
-    store.addAction({
+    useAgentBuilderStore.getState().addAction({
       id: 'action-2',
       type: 'send_message',
       name: 'Second',
@@ -306,10 +301,11 @@ describe('FlowBuilder Store', () => {
       order: 1,
     });
 
-    store.startConnecting('action-1');
-    store.finishConnecting('action-2');
+    useAgentBuilderStore.getState().startConnecting('action-1');
+    useAgentBuilderStore.getState().finishConnecting('action-2');
 
-    expect(store.isConnecting).toBe(false);
-    expect(store.actions[1].dependsOn).toContain('action-1');
+    const state = useAgentBuilderStore.getState();
+    expect(state.isConnecting).toBe(false);
+    expect(state.actions[1].dependsOn).toContain('action-1');
   });
 });

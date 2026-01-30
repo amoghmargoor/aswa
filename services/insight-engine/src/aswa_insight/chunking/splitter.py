@@ -96,11 +96,14 @@ class TextSplitter:
         start = 0
         index = 0
 
+        # Ensure overlap is less than chunk size
+        effective_overlap = min(self.chunk_overlap, self.chunk_size - 1)
+
         while start < len(text):
             end = min(start + self.chunk_size, len(text))
 
             # Try to end at a sentence boundary
-            if end < len(text):
+            if end < len(text) and start + self.min_chunk_size < end:
                 last_period = text.rfind(".", start + self.min_chunk_size, end)
                 if last_period > start:
                     end = last_period + 1
@@ -112,14 +115,23 @@ class TextSplitter:
                         index=index,
                         text=chunk_text,
                         start_offset=start,
-                        end_offset=end,
+                        end_offset=min(end, len(text)),
                     )
                 )
                 index += 1
 
-            start = end - self.chunk_overlap
-            if start >= len(text):
+            # Calculate next start position
+            # Advance by (chunk_size - overlap) to create proper overlap
+            step = self.chunk_size - effective_overlap
+            if step <= 0:
+                step = 1
+            next_start = start + step
+
+            # If we're near the end and would create a tiny final chunk, stop
+            if next_start >= len(text):
                 break
+
+            start = next_start
 
         return chunks
 
@@ -154,7 +166,14 @@ class TextSplitter:
                     chunks.append(section)
             return self._create_chunks_with_offsets(chunks, text)
 
-        return self._split_recursive_inner(text, level=0)
+        # Get string results and merge small pieces
+        string_results = self._split_recursive_inner(text, level=0)
+
+        # If we got no results or all small pieces, fall back to fixed size splitting
+        if not string_results or all(len(s.strip()) < self.min_chunk_size for s in string_results):
+            return self._split_fixed(text)
+
+        return self._create_chunks_with_offsets(string_results, text)
 
     def _split_recursive_inner(self, text: str, level: int) -> list[str]:
         """Inner recursive splitting."""
@@ -245,15 +264,23 @@ class TextSplitter:
             if start == -1:
                 start = search_start
 
+            # Ensure we don't create chunks beyond text bounds
+            end = start + len(text)
+            if end > len(original_text):
+                # Adjust or skip if we're past the end
+                if start >= len(original_text):
+                    continue
+                end = len(original_text)
+
             chunks.append(
                 Chunk(
                     index=len(chunks),
                     text=text,
                     start_offset=start,
-                    end_offset=start + len(text),
+                    end_offset=end,
                 )
             )
-            search_start = start + len(text)
+            search_start = end
 
         return chunks
 
