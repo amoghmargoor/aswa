@@ -27,7 +27,7 @@ jobs:
     outputs:
       image_tag: ${{ steps.validate.outputs.image_tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Validate version format
         id: validate
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: approval
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -116,7 +116,7 @@ jobs:
       name: production
       url: https://app.aswa.io
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
